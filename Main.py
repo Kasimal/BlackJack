@@ -15,7 +15,7 @@ def Game():
 
     def display_probabilities():
         reach, exceed = hand.probability_to_reach_or_exceed(deck)
-        print(f"Sie sollten eine weitere Karten nehmen: {reach:.2%} zu {exceed:.2%}")
+        print(f"Eine weitere Karte nehmen, ohne Überbieten zu Überbieten: {reach:.2%} zu {exceed:.2%}")
 
     display_probabilities()
 

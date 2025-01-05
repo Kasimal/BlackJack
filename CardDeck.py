@@ -2,11 +2,12 @@ import random
 
 class CardDeck:
     def __init__(self, num_decks=1):
+        self.deck = None
         self.num_decks = num_decks
         self.reset_deck()
 
     def reset_deck(self):
-        self.deck = [value for value in ([1, 10, 10, 10] + list(range(2, 10))) * 4] * self.num_decks
+        self.deck = [value for value in (list(range(1, 10)) + [10, 10, 10, 10]) * 4] * self.num_decks
         random.shuffle(self.deck)
 
     def draw_card(self):

@@ -15,10 +15,10 @@ class Hand:
                 value += 10
                 aces -= 1
         # Berechnung für den minimalen Wert (keine Aces als 11)
-        else:
-            while aces > 0:
-                value += 1
-                aces -= 1
+        #else:
+        #    while aces > 0:
+        #        value += 1
+        #        aces -= 1
 
         return value
 
@@ -52,4 +52,4 @@ class Hand:
         return reach / total_cards, exceed / total_cards
 
     def __str__(self):
-        return f"Cards: {self.cards}, Total value: {self.calculate_value()}"
+        return f"Cards: {self.cards}, Gesamtwert: {self.calculate_value()}"
