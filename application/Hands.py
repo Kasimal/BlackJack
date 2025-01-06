@@ -1,91 +1,70 @@
-from collections import defaultdict
-from itertools import combinations, permutations
-
-class Hand:
-    def __init__(self):
-        self.cards = []
-
-    def add_card(self, card):
-        self.cards.append(card)
-
-    def calculate_value(self, minimum=False):
-        value = sum(self.cards)
-        aces = self.cards.count(1)
-
-        if not minimum:
-            while value <= 11 and aces > 0:
-                value += 10
-                aces -= 1
-        return value
-
-    def __repr__(self):
-        return f"Hand(cards={self.cards})"
+from Deck import Deck
+from Hand import Hand
 
 
-class Deck:
-    def __init__(self, deck_count=1):
-        self.deck_count = deck_count
-        self.card_values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10]  # Kartenwerte inkl. Bildkarten
-        self.deck = self.card_values * 4 * deck_count
+class Hands:
+    def __init__(self, deck):
+        """
+        Initialisiert die Klasse Hands mit einem gegebenen Deck.
+        Speichert alle möglichen Hände und deren Werte.
+        """
+        self.deck = deck
+        self.all_hands = []
 
+    def generate_all_hands(self):
+        """
+        Generiert alle möglichen Hände, indem Karten aus dem Deck gezogen werden.
+        Stoppt das Ziehen, wenn der Wert einer Hand 21 oder mehr beträgt.
+        """
+        initial_hand = Hand()
+        self._explore_hands(initial_hand, self.deck)
 
-class BlackjackHandTracker:
-    def __init__(self, deck_count=1):
-        self.deck = Deck(deck_count)
-        self.hands = defaultdict(int)  # Speichert alle möglichen Hände: {Hand: frequency}
+    def _explore_hands(self, current_hand, current_deck):
+        """
+        Rekursive Funktion, um alle möglichen Hände zu generieren.
 
-    def track_hands(self, max_hands=5):
-        """Berechnet eine begrenzte Anzahl von Händen und deren Häufigkeiten."""
-        # Schritt 1: Generiere alle möglichen Startkombinationen (zwei Karten, Reihenfolge egal)
-        start_combinations = combinations(self.deck.deck, 2)
+        Args:
+            current_hand (Hand): Die aktuelle Hand.
+            current_deck (Deck): Der aktuelle Zustand des Decks.
+        """
+        # Berechne den Wert der aktuellen Hand
+        current_value = current_hand.calculate_value()
 
-        count = 0
-        for combo in start_combinations:
-            if count >= max_hands:
-                break
+        # Stoppe, wenn der Wert 21 oder mehr beträgt
+        if current_value >= 21:
+            self.all_hands.append((current_hand.cards[:], current_value))
+            return
 
-            hand = Hand()
-            hand.add_card(combo[0])
-            hand.add_card(combo[1])
-            sorted_hand = tuple(sorted(combo))
-            self.hands[(sorted_hand, ())] += 1
+        # Für jede Karte im Deck, die noch verfügbar ist
+        for card, frequency in current_deck.card_frequencies.items():
+            if frequency > 0:
+                # Erstelle Kopien von Hand und Deck
+                new_hand = Hand()
+                new_hand.cards = current_hand.cards[:]  # Kopiere die aktuelle Hand
+                new_hand.add_card_from_deck(current_deck, card)
 
-            # Schritt 2: Generiere mögliche Reihenfolgen für gezogene Karten
-            reduced_deck = self.deck.deck[:]
-            reduced_deck.remove(combo[0])
-            reduced_deck.remove(combo[1])
+                new_deck = Deck(deck_count=current_deck.deck_count)
+                new_deck.card_frequencies = current_deck.card_frequencies.copy()
+                new_deck.remove_card(card)
 
-            for draw_count in range(1, len(reduced_deck) + 1):  # Anzahl gezogener Karten
-                for drawn_cards in permutations(reduced_deck, draw_count):
-                    self.hands[(sorted_hand, drawn_cards)] += 1
-            count += 1
+                # Rekursiv die neuen Kombinationen erkunden
+                self._explore_hands(new_hand, new_deck)
 
-    def get_hands_with_values(self):
-        """Gibt eine Liste aller Hände mit ihrem Wert und ihrer Häufigkeit zurück."""
-        hands_with_values = []
-        for (start_hand, drawn_cards), freq in self.hands.items():
-            hand = Hand()
-            for card in start_hand:
-                hand.add_card(card)
-            for card in drawn_cards:
-                hand.add_card(card)
+    def get_hands(self):
+        """
+        Gibt alle generierten Hände mit ihrem Wert zurück.
+        """
+        return self.all_hands
 
-            value = hand.calculate_value()
-            hands_with_values.append({
-                "start_hand": start_hand,
-                "drawn_cards": drawn_cards,
-                "value": value,
-                "frequency": freq
-            })
-        return hands_with_values
+# Erstelle ein Deck
+deck = Deck(deck_count=1)
 
+# Erstelle eine Instanz von Hands
+hands = Hands(deck)
 
-# Beispielnutzung
-tracker = BlackjackHandTracker(deck_count=1)
-tracker.track_hands(max_hands=5)  # Verarbeite nur die ersten 5 Starthände
-hands_with_values = tracker.get_hands_with_values()
+# Generiere alle möglichen Hände
+hands.generate_all_hands()
 
-# Ausgabe der Hände
-for hand in hands_with_values:
-    print(f"Start Hand: {hand['start_hand']}, Drawn Cards: {hand['drawn_cards']}, "
-          f"Value: {hand['value']}, Frequency: {hand['frequency']}")
+# Zeige die generierten Hände mit ihren Werten
+for cards, value in hands.get_hands():
+    print(f"Karten: {cards}, Wert: {value}")
