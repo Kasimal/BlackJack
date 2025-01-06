@@ -1,24 +1,39 @@
-import random
-
 class Deck:
-    def __init__(self, num_decks=1):
-        self.deck = None
-        self.num_decks = num_decks
-        self.reset_deck()
+    def __init__(self, deck_count=1):
+        """Erstellt ein Deck mit Kartenwerten von 1 bis 10 und ihren Häufigkeiten."""
+        self.deck_count = deck_count
+        # Häufigkeiten pro Karte in einem Standarddeck
+        self.card_frequencies = {
+            1: 4 * deck_count,  # Ass
+            2: 4 * deck_count,
+            3: 4 * deck_count,
+            4: 4 * deck_count,
+            5: 4 * deck_count,
+            6: 4 * deck_count,
+            7: 4 * deck_count,
+            8: 4 * deck_count,
+            9: 4 * deck_count,
+            10: 16 * deck_count,  # 10, Bube, Dame, König
+        }
 
-    def reset_deck(self):
-        self.deck = [value for value in (list(range(1, 10)) + [10, 10, 10, 10]) * 4] * self.num_decks
-        random.shuffle(self.deck)
+    def remove_card(self, card):
+        """Entfernt eine Karte aus dem Deck, reduziert ihre Häufigkeit."""
+        if card in self.card_frequencies and self.card_frequencies[card] > 0:
+            self.card_frequencies[card] -= 1
 
-    def draw_card(self):
-        if not self.deck:
-            self.reset_deck()
-        return self.deck.pop()
+    def add_card(self, card):
+        """Fügt eine Karte zurück ins Deck, erhöht ihre Häufigkeit."""
+        if card in self.card_frequencies:
+            self.card_frequencies[card] += 1
 
-    def calculate_probabilities(self):
-        total_cards = len(self.deck)
-        probabilities = {}
-        for value in range(1, 11):
-            count = self.deck.count(value if value != 10 else 10) + (self.deck.count(10) if value == 10 else 0)
-            probabilities[value] = count / total_cards if total_cards > 0 else 0
-        return probabilities
+    def total_cards(self, card=None):
+        """
+        Gibt die Gesamtanzahl der verbleibenden Karten im Deck zurück.
+        Wenn eine bestimmte Karte angegeben wird, wird deren Häufigkeit zurückgegeben.
+        """
+        if card is not None:
+            return self.card_frequencies.get(card, 0)
+        return sum(self.card_frequencies.values())
+
+    def __repr__(self):
+        return f"Deck({self.card_frequencies})"

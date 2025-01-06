@@ -3,12 +3,12 @@ from Hand import Hand
 
 def Game():
     print("Willkommen zu Blackjack!")
-    deck = Deck(num_decks=1)
+    deck = Deck(deck_count=1)
     hand = Hand()
 
     # Initiale Hand
-    hand.add_card(deck.draw_card())
-    hand.add_card(deck.draw_card())
+    hand.draw_random_card_from_deck(deck)
+    hand.draw_random_card_from_deck(deck)
     print("Ihre Starthand:")
     print(hand)
 
@@ -26,7 +26,7 @@ def Game():
 
         choice = input("Möchten Sie eine weitere Karte ziehen? (j/n): ").lower()
         if choice == 'j':
-            hand.add_card(deck.draw_card())
+            hand.draw_random_card_from_deck(deck)
             print("Ihre aktuelle Hand:")
             print(hand)
             display_probabilities()
