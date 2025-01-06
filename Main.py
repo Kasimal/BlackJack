@@ -1,10 +1,9 @@
-from CardDeck import CardDeck
+from Deck import Deck
 from Hand import Hand
-
 
 def Game():
     print("Willkommen zu Blackjack!")
-    deck = CardDeck(num_decks=1)
+    deck = Deck(num_decks=1)
     hand = Hand()
 
     # Initiale Hand

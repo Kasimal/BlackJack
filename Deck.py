@@ -1,6 +1,6 @@
 import random
 
-class CardDeck:
+class Deck:
     def __init__(self, num_decks=1):
         self.deck = None
         self.num_decks = num_decks
