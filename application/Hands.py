@@ -43,6 +43,7 @@ class Hands:
             current_hand (Hand): Die aktuelle Hand.
             deck (Deck): Der aktuelle Zustand des Decks.
         """
+        # TODO: alle 4 Asse verwenden
         # Berechne den Wert der aktuellen Hand
         current_value = current_hand.calculate_value()
         minimum_value = current_hand.calculate_value(minimum=True)
