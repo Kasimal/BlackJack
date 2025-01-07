@@ -1,10 +1,25 @@
 import random
 from Deck import Deck
 
+
 class Hand:
-    def __init__(self):
-        """Erstellt eine leere Hand."""
-        self.cards = []
+    def __init__(self, cards=None):
+        """
+        Initialisiert eine Hand mit optionalen Karten.
+
+        Args:
+            cards (list): Eine Liste der Karten in der Hand (Standard: leer).
+        """
+        self.cards = cards if cards else []
+
+    def add_card(self, card):
+        """
+        Fügt eine Karte zur Hand hinzu.
+
+        Args:
+            card (int): Die hinzuzufügende Karte.
+        """
+        self.cards.append(card)
 
     def add_card_from_deck(self, deck, card):
         """
@@ -16,7 +31,6 @@ class Hand:
             deck.remove_card(card)
         else:
             raise ValueError(f"Karte {card} ist nicht im Deck verfügbar.")
-
 
     def draw_random_card_from_deck(self, deck):
         """
@@ -34,22 +48,96 @@ class Hand:
         random_card = random.choice(weighted_deck)
         self.add_card_from_deck(deck, random_card)
 
-
     def calculate_value(self, minimum=False):
         """
-        Berechnet den Wert der Hand.
-        - Wenn `minimum=True`, wird Ass immer als 1 gezählt.
-        - Sonst wird Ass als 11 gezählt, wenn der Gesamtwert ≤ 21 bleibt.
+        Berechnet den Gesamtwert der Hand.
+
+        Args:
+            minimum (bool): Wenn True, wird der minimal mögliche Wert berechnet (z. B. Ass = 1).
+
+        Returns:
+            int: Der Gesamtwert der Hand.
         """
-        value = sum(self.cards)
-        aces = self.cards.count(1)
+        value = 0
+        aces = 0
 
-        if not minimum:
-            while value <= 11 and aces > 0:
-                value += 10
-                aces -= 1
+        for card in self.cards:
+            if card == 1:
+                aces += 1
+                value += 11
+            else:
+                value += min(card, 10)
 
-        return value
+        while value > 21 and aces > 0:
+            value -= 10
+            aces -= 1
+
+        return value if not minimum else value - 10 * aces
+
+    def is_busted(self):
+        """
+        Prüft, ob die Hand über 21 Punkte hat.
+
+        Returns:
+            bool: True, wenn die Hand überzogen ist, sonst False.
+        """
+        return self.calculate_value() > 21
+
+    def is_starthand(self):
+        """
+        Prüft, ob die Hand eine Starthand ist (zwei Karten).
+
+        Returns:
+            bool: True, wenn die Hand eine Starthand ist, sonst False.
+        """
+        return len(self.cards) == 2
+
+    def can_double(self):
+        """
+        Prüft, ob ein Double möglich ist (jede Starthand außer 21).
+
+        Returns:
+            bool: True, wenn Double möglich ist, sonst False.
+        """
+        return self.is_starthand() and self.calculate_value() != 21
+
+    def can_split(self):
+        """
+        Prüft, ob ein Split möglich ist (zwei gleiche Karten in der Starthand).
+
+        Returns:
+            bool: True, wenn Split möglich ist, sonst False.
+        """
+        return self.is_starthand() and len(set(self.cards)) == 1
+
+    def card_counts(self):
+        """
+        Gibt ein Dictionary mit der Häufigkeit jeder Karte in der Hand zurück.
+
+        Returns:
+            dict: Ein Dictionary mit den Kartenwerten (1 bis 10) und ihrer Häufigkeit.
+        """
+        counts = {card: 0 for card in range(1, 11)}
+        for card in self.cards:
+            counts[card] += 1
+        return counts
+
+    def to_db_row(self):
+        """
+        Konvertiert die Hand in das Format für den Datenbankeintrag.
+
+        Returns:
+            tuple: Ein Tupel, das die Spalten der Datenbanktabelle repräsentiert.
+        """
+        counts = self.card_counts()
+        total_value = self.calculate_value()
+        minimum_value = self.calculate_value(minimum=True)
+        return (
+            counts[1], counts[2], counts[3], counts[4], counts[5],
+            counts[6], counts[7], counts[8], counts[9], counts[10],
+            total_value, minimum_value,
+            self.is_busted(), self.is_starthand(), self.can_double(), self.can_split(), 1
+        )
 
     def probability_to_reach_or_exceed(self, deck, target_value=21):
         """

@@ -1,5 +1,8 @@
 from Deck import Deck
 from Hand import Hand
+from application.Hands import Hands
+from application.db import DatabaseManager
+
 
 def Game():
     print("Willkommen zu Blackjack!")
@@ -39,5 +42,22 @@ def Game():
         else:
             print("Ungültige Eingabe. Bitte 'j' oder 'n' eingeben.")
 
+def Hands_in_DB():
+    # Hands generieren
+    deck = Deck(deck_count=1)
+    hands = Hands(deck)
+    hands.generate_all_hands()
+
+    # Hände in die Datenbank speichern
+    db_manager = DatabaseManager("BlackjackDB.db")
+    db_manager.save_hands(hands.all_hands)
+
+    # Alle Hände aus der Datenbank abrufen und anzeigen
+    all_hands_from_db = db_manager.fetch_all_hands()
+    for hand in all_hands_from_db:
+        print(hand)
+
 if __name__ == "__main__":
-    Game()
+    #Game()
+    Hands_in_DB()
+
