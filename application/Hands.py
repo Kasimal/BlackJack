@@ -1,7 +1,5 @@
-import sqlite3
-
-from Deck import Deck
-from Hand import Hand
+from Models.Deck import Deck
+from Models.Hand import Hand
 
 
 class Hands:
@@ -58,15 +56,15 @@ class Hands:
         """
         return self.all_hands
 
-# Erstelle ein Deck
-deck = Deck(deck_count=1)
-
-# Erstelle eine Instanz von Hands
-hands = Hands(deck)
-
-# Generiere alle möglichen Hände
-hands.generate_all_hands()
-
-# Zeige die generierten Hände mit ihren Werten
-for cards, value in hands.get_hands():
-    print(f"Karten: {cards}, Wert: {value}")
+# # Erstelle ein Deck
+# deck = Deck(deck_count=1)
+#
+# # Erstelle eine Instanz von Hands
+# hands = Hands(deck)
+#
+# # Generiere alle möglichen Hände
+# hands.generate_all_hands()
+#
+# # Zeige die generierten Hände mit ihren Werten
+# for cards, value in hands.get_hands():
+# print(f"Karten: {cards}, Wert: {value}")

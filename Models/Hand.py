@@ -1,8 +1,9 @@
 import random
-from Deck import Deck
+from Models.Deck import Deck
 
 
 class Hand:
+
     def __init__(self, cards=None):
         """
         Initialisiert eine Hand mit optionalen Karten.
@@ -11,6 +12,7 @@ class Hand:
             cards (list): Eine Liste der Karten in der Hand (Standard: leer).
         """
         self.cards = cards if cards else []
+
 
     def add_card(self, card):
         """

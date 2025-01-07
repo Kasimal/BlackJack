@@ -1,5 +1,6 @@
-from Deck import Deck
-from Hand import Hand
+
+from Models.Deck import Deck
+from Models.Hand import Hand
 from application.Hands import Hands
 from application.db import DatabaseManager
 
@@ -43,19 +44,27 @@ def Game():
             print("Ungültige Eingabe. Bitte 'j' oder 'n' eingeben.")
 
 def Hands_in_DB():
-    # Hands generieren
-    deck = Deck(deck_count=1)
-    hands = Hands(deck)
-    hands.generate_all_hands()
+    # Erstelle ein Hand-Objekt
+    hand1 = Hand([1, 1])  # Zwei Asse
+    hand2 = Hand([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])  # von jedem eins
 
-    # Hände in die Datenbank speichern
-    db_manager = DatabaseManager("BlackjackDB.db")
-    db_manager.save_hands(hands.all_hands)
+    # Initialisiere den DatabaseManager
+    db_manager = DatabaseManager()
 
-    # Alle Hände aus der Datenbank abrufen und anzeigen
-    all_hands_from_db = db_manager.fetch_all_hands()
-    for hand in all_hands_from_db:
-        print(hand)
+    # Speichere einzelne Hände
+    db_manager.save_hand(hand1)
+    db_manager.save_hand(hand2)
+
+    # Speichere mehrere Hände
+    hands = [Hand([7, 7, 7]), Hand([10, 10]), Hand([2, 3, 6])]
+    db_manager.save_hands(hands)
+
+    # Abrufen der gespeicherten Hände
+    for row in db_manager.fetch_all_hands():
+        print(row)
+
+    # Schließe die Verbindung zur Datenbank
+    db_manager.close()
 
 if __name__ == "__main__":
     #Game()
