@@ -43,7 +43,6 @@ class Hands:
             current_hand (Hand): Die aktuelle Hand.
             deck (Deck): Der aktuelle Zustand des Decks.
         """
-        # TODO: alle 4 Asse verwenden
         # Berechne den Wert der aktuellen Hand
         current_value = current_hand.calculate_value()
         minimum_value = current_hand.calculate_value(minimum=True)
@@ -63,14 +62,16 @@ class Hands:
                 new_hand.cards = current_hand.cards[:]  # Kopiere die aktuelle Hand
                 new_hand.add_card_from_deck(deck, card)
 
-                # Erstelle ein neues Deck, indem die gezogene Karte entfernt wird
-                new_deck = Deck(deck_count=deck.deck_count)
-                new_deck.card_frequencies = deck.card_frequencies.copy()
-                new_deck.remove_card(card)
+                # # Erstelle ein neues Deck, indem die gezogene Karte entfernt wird
+                # new_deck = Deck(deck_count=deck.deck_count)
+                # new_deck.card_frequencies = deck.card_frequencies.copy()
+                # new_deck.remove_card(card)
 
                 # Rekursiv die neuen Kombinationen erkunden
-                self.explore_hands(new_hand, new_deck)
+                self.explore_hands(new_hand, deck)
 
+                # Rückgängig machen, um Karte für weitere Kombinationen wieder verfügbar zu machen
+                deck.add_card(card)
 
     def save_to_json(self, filename):
         """
