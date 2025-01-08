@@ -5,14 +5,14 @@ class Deck:
         # Häufigkeiten pro Karte in einem Standarddeck
         self.card_frequencies = {
             1: 4 * deck_count,  # Ass
-            2: 4 * deck_count,
-            3: 4 * deck_count,
-            4: 4 * deck_count,
-            5: 4 * deck_count,
-            6: 4 * deck_count,
-            7: 4 * deck_count,
-            8: 4 * deck_count,
-            9: 4 * deck_count,
+            # 2: 4 * deck_count,
+            # 3: 4 * deck_count,
+            # 4: 4 * deck_count,
+            # 5: 4 * deck_count,
+            # 6: 4 * deck_count,
+            # 7: 4 * deck_count,
+            # 8: 4 * deck_count,
+            # 9: 4 * deck_count,
             10: 16 * deck_count,  # 10, Bube, Dame, König
         }
 

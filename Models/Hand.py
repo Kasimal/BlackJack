@@ -124,22 +124,35 @@ class Hand:
             counts[card] += 1
         return counts
 
-    def to_db_row(self):
+    def calculate_frequency(self, deck, previous_frequency=1):
         """
-        Konvertiert die Hand in das Format für den Datenbankeintrag.
+        Berechnet die Häufigkeit dieser Hand basierend auf der Häufigkeit der Vorgängerhand
+        und der Häufigkeit der neu hinzugefügten Karte.
+
+        Args:
+            deck (Deck): Das aktuelle Deck.
+            previous_frequency (float): Die Häufigkeit der Vorgängerhand.
 
         Returns:
-            tuple: Ein Tupel, das die Spalten der Datenbanktabelle repräsentiert.
+            float: Die Häufigkeit dieser Hand.
         """
-        counts = self.card_counts()
-        total_value = self.calculate_value()
-        minimum_value = self.calculate_value(minimum=True)
-        return (
-            counts[1], counts[2], counts[3], counts[4], counts[5],
-            counts[6], counts[7], counts[8], counts[9], counts[10],
-            total_value, minimum_value,
-            self.is_busted(), self.is_starthand(), self.can_double(), self.can_split(), 1
-        )
+        # Bestimme die zuletzt hinzugefügte Karte
+        last_card = self.cards[-1] if self.cards else None
+
+        if last_card is None:
+            return previous_frequency  # Keine Karte hinzugefügt, gleiche Häufigkeit
+
+        # Häufigkeit der Karte im Deck
+        card_frequency_in_deck = deck.card_frequencies[last_card]
+
+        # Anzahl dieser Karte in der aktuellen Hand
+        card_count_in_hand = self.cards.count(last_card)
+
+        if card_count_in_hand == 0:
+            return previous_frequency
+
+        # Neue Häufigkeit berechnen
+        return int(previous_frequency * card_frequency_in_deck / card_count_in_hand)
 
     def probability_to_reach_or_exceed(self, deck, target_value=21):
         """
@@ -183,6 +196,26 @@ class Hand:
         exceed_probability = exceed / total_cards
 
         return reach_probability, exceed_probability
+
+    def to_db_row(self, frequency):
+        """
+        Konvertiert die Hand in das Format für den Datenbankeintrag.
+
+        Args:
+            frequency (integer): Die Häufigkeit der Hand.
+
+        Returns:
+            tuple: Ein Tupel, das die Spalten der Datenbanktabelle repräsentiert.
+        """
+        counts = self.card_counts()
+        total_value = self.calculate_value()
+        minimum_value = self.calculate_value(minimum=True)
+        return (
+            counts[1], counts[2], counts[3], counts[4], counts[5],
+            counts[6], counts[7], counts[8], counts[9], counts[10],
+            total_value, minimum_value,
+            self.is_busted(), self.is_starthand(), self.can_double(), self.can_split(), frequency
+        )
 
     def __repr__(self):
         return f"Hand(cards={self.cards}, value={self.calculate_value()})"

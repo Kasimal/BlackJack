@@ -45,36 +45,52 @@ class DatabaseManager:
                 is_starthand BOOLEAN,
                 can_double BOOLEAN,
                 can_split BOOLEAN,
-                frequency INTEGER
+                frequency INTEGER,
+                UNIQUE (card_1, card_2, card_3, card_4, card_5, card_6, card_7, card_8, card_9, card_10)
             )
         ''')
         self.connection.commit()
 
-    def save_hand(self, hand):
+    def save_hand(self, hand, deck, previous_frequency=1):
         """
-        Speichert eine Hand in der Datenbank.
+        Speichert eine Hand in der Datenbank oder erhöht die Häufigkeit, falls sie bereits existiert.
 
         Args:
             hand (Hand): Die Hand, die gespeichert werden soll.
+            deck (Deck): Das aktuelle Deck.
+            previous_frequency (float): Die Häufigkeit der vorherigen Hand.
         """
-        db_row = hand.to_db_row()
-        self.cursor.execute('''
-            INSERT INTO hands (
-                card_1, card_2, card_3, card_4, card_5, card_6, card_7, card_8, card_9, card_10,
-                total_value, minimum_value, is_busted, is_starthand, can_double, can_split, frequency
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', db_row)
+        frequency = hand.calculate_frequency(deck, previous_frequency)
+        db_row = hand.to_db_row(frequency)
+        try:
+            # Versuche, die Hand in die Datenbank einzufügen
+            self.cursor.execute('''
+                INSERT INTO hands (
+                    card_1, card_2, card_3, card_4, card_5, card_6, card_7, card_8, card_9, card_10,
+                    total_value, minimum_value, is_busted, is_starthand, can_double, can_split, frequency
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', db_row)
+        except sqlite3.IntegrityError:
+            # Falls die Hand bereits existiert, erhöhe die Häufigkeit
+            self.cursor.execute('''
+                UPDATE hands
+                SET frequency = frequency + ?
+                WHERE card_1 = ? AND card_2 = ? AND card_3 = ? AND card_4 = ? AND 
+                      card_5 = ? AND card_6 = ? AND card_7 = ? AND card_8 = ? AND 
+                      card_9 = ? AND card_10 = ?
+            ''', [frequency] + list(db_row[:10]))
         self.connection.commit()
 
-    def save_hands(self, hands):
+    def save_hands(self, hands, deck):
         """
         Speichert eine Liste von Händen in der Datenbank.
 
         Args:
             hands (list of Hand): Eine Liste von Hand-Objekten.
+            deck (Deck): Das aktuelle Deck.
         """
         for hand in hands:
-            self.save_hand(hand)
+            self.save_hand(hand, deck)
 
     def fetch_all_hands(self):
         """
