@@ -139,17 +139,13 @@ class Hand:
         # Bestimme die zuletzt hinzugefügte Karte
         last_card = self.cards[-1] if self.cards else None
 
-        if last_card is None:
-            return previous_frequency  # Keine Karte hinzugefügt, gleiche Häufigkeit
+        card_count_in_hand = self.cards.count(last_card)
+
+        if last_card is None or card_count_in_hand == 0:
+            return previous_frequency  # Keine Karte hinzugefügt
 
         # Häufigkeit der Karte im Deck
         card_frequency_in_deck = deck.card_frequencies[last_card]
-
-        # Anzahl dieser Karte in der aktuellen Hand
-        card_count_in_hand = self.cards.count(last_card)
-
-        if card_count_in_hand == 0:
-            return previous_frequency
 
         # Neue Häufigkeit berechnen
         return int(previous_frequency * card_frequency_in_deck / card_count_in_hand)

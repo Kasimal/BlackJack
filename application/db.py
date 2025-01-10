@@ -20,6 +20,9 @@ class DatabaseManager:
         self.connection = sqlite3.connect(self.db_path)
         self.cursor = self.connection.cursor()
 
+        # Spalten für die Datenbank definieren (1-10)
+        self.card_columns = [f"card_{i}" for i in range(1, 11)]
+
         # Tabelle erstellen, falls sie nicht existiert
         self.create_table()
 
@@ -41,8 +44,8 @@ class DatabaseManager:
                 card_10 INTEGER,
                 total_value INTEGER,
                 minimum_value INTEGER,
+                is_starthand INTEGER,
                 is_busted BOOLEAN,
-                is_starthand BOOLEAN,
                 can_double BOOLEAN,
                 can_split BOOLEAN,
                 frequency INTEGER,
@@ -51,34 +54,48 @@ class DatabaseManager:
         ''')
         self.connection.commit()
 
-    def save_hand(self, hand, deck, previous_frequency=1):
+    def save_hand(self, hand, deck, previous_frequency):
         """
-        Speichert eine Hand in der Datenbank oder erhöht die Häufigkeit, falls sie bereits existiert.
+        Speichert die gegebene Hand in der Datenbank oder aktualisiert deren Häufigkeit,
+        falls sie bereits existiert.
 
         Args:
             hand (Hand): Die Hand, die gespeichert werden soll.
             deck (Deck): Das aktuelle Deck.
-            previous_frequency (float): Die Häufigkeit der vorherigen Hand.
+            previous_frequency (float): Die Häufigkeit der Vorgängerhand.
         """
+        # Berechne die Häufigkeit der aktuellen Hand
         frequency = hand.calculate_frequency(deck, previous_frequency)
+
+        # Baue die Datenbankzeile für die Hand
         db_row = hand.to_db_row(frequency)
-        try:
-            # Versuche, die Hand in die Datenbank einzufügen
-            self.cursor.execute('''
-                INSERT INTO hands (
-                    card_1, card_2, card_3, card_4, card_5, card_6, card_7, card_8, card_9, card_10,
-                    total_value, minimum_value, is_busted, is_starthand, can_double, can_split, frequency
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', db_row)
-        except sqlite3.IntegrityError:
-            # Falls die Hand bereits existiert, erhöhe die Häufigkeit
-            self.cursor.execute('''
+
+        # Überprüfen, ob die Hand bereits existiert
+        cursor = self.connection.cursor()
+        cursor.execute('''
+            SELECT frequency FROM hands 
+            WHERE ''' + ' AND '.join(f"{col} = ?" for col in self.card_columns) + '''
+        ''', db_row[:10])  # Vergleich nur der Kartenanzahlen
+        result = cursor.fetchone()
+
+        if result:
+            current_frequency = result[0]
+            new_frequency = current_frequency + frequency
+            cursor.execute('''
                 UPDATE hands
-                SET frequency = frequency + ?
-                WHERE card_1 = ? AND card_2 = ? AND card_3 = ? AND card_4 = ? AND 
-                      card_5 = ? AND card_6 = ? AND card_7 = ? AND card_8 = ? AND 
-                      card_9 = ? AND card_10 = ?
-            ''', [frequency] + list(db_row[:10]))
+                SET frequency = ?
+                WHERE ''' + ' AND '.join(f"{col} = ?" for col in self.card_columns) + '''
+            ''', [new_frequency] + list(db_row[:10]))
+        else:
+            cursor.execute('''
+                INSERT INTO hands (''' + ', '.join(self.card_columns + [
+                "total_value", "minimum_value",
+                "is_starthand", "is_busted",
+                "can_double", "can_split", "frequency"
+            ]) + ''')
+                VALUES (''' + ', '.join(['?'] * len(db_row)) + ''')
+            ''', db_row)
+
         self.connection.commit()
 
     def save_hands(self, hands, deck):
