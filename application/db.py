@@ -54,7 +54,7 @@ class DatabaseManager:
         ''')
         self.connection.commit()
 
-    def save_hand(self, hand, deck, previous_frequency):
+    def save_hand(self, hand, deck):
         """
         Speichert die gegebene Hand in der Datenbank oder aktualisiert deren Häufigkeit,
         falls sie bereits existiert.
@@ -65,7 +65,7 @@ class DatabaseManager:
             previous_frequency (float): Die Häufigkeit der Vorgängerhand.
         """
         # Berechne die Häufigkeit der aktuellen Hand
-        frequency = hand.calculate_frequency(deck, previous_frequency)
+        frequency = hand.calculate_frequency(deck)
 
         # Baue die Datenbankzeile für die Hand
         db_row = hand.to_db_row(frequency)

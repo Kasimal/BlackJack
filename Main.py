@@ -78,7 +78,7 @@ def All_Hands_in_DB():
     hands = Hands(deck, db_manager)
 
     # Generiere alle Hände und speichere sie in der Datenbank
-    hands.generate_and_save_hands()
+    hands.generate_and_save_hands(deck)
 
     print("Alle möglichen Hände wurden erfolgreich in die Datenbank eingetragen.")
 

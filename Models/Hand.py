@@ -4,14 +4,16 @@ from Models.Deck import Deck
 
 class Hand:
 
-    def __init__(self, cards=None):
+    def __init__(self, cards=None, is_starthand=False):
         """
         Initialisiert eine Hand mit optionalen Karten.
 
         Args:
             cards (list): Eine Liste der Karten in der Hand (Standard: leer).
         """
-        self.cards = cards if cards else []
+        self.cards = cards if cards is not None else []
+        self.is_starthand = is_starthand  # Speichere den Status der Starthand
+        self.frequency = None  # Häufigkeit wird später berechnet
 
 
     def add_card(self, card):
@@ -101,7 +103,7 @@ class Hand:
         Returns:
             bool: True, wenn Double möglich ist, sonst False.
         """
-        return self.is_starthand() and self.calculate_value() != 21
+        return self.is_starthand and self.calculate_value() != 21
 
     def can_split(self):
         """
@@ -110,7 +112,7 @@ class Hand:
         Returns:
             bool: True, wenn Split möglich ist, sonst False.
         """
-        return self.is_starthand() and len(set(self.cards)) == 1
+        return self.is_starthand and len(set(self.cards)) == 1
 
     def card_counts(self):
         """
@@ -124,31 +126,29 @@ class Hand:
             counts[card] += 1
         return counts
 
-    def calculate_frequency(self, deck, previous_frequency=1):
+    def calculate_frequency(self, deck):
         """
-        Berechnet die Häufigkeit dieser Hand basierend auf der Häufigkeit der Vorgängerhand
-        und der Häufigkeit der neu hinzugefügten Karte.
+        Berechnet die Häufigkeit der Hand basierend auf den Karten im Deck.
 
         Args:
             deck (Deck): Das aktuelle Deck.
-            previous_frequency (float): Die Häufigkeit der Vorgängerhand.
 
         Returns:
-            float: Die Häufigkeit dieser Hand.
+            float: Die berechnete Häufigkeit der Hand.
         """
-        # Bestimme die zuletzt hinzugefügte Karte
-        last_card = self.cards[-1] if self.cards else None
-
-        card_count_in_hand = self.cards.count(last_card)
-
-        if last_card is None or card_count_in_hand == 0:
-            return previous_frequency  # Keine Karte hinzugefügt
-
-        # Häufigkeit der Karte im Deck
-        card_frequency_in_deck = deck.card_frequencies[last_card]
-
-        # Neue Häufigkeit berechnen
-        return int(previous_frequency * card_frequency_in_deck / card_count_in_hand)
+        if self.is_starthand:
+            # Spezialfall für Starthände (z. B. Häufigkeit der Kombination von 2 Karten)
+            card1, card2 = self.cards
+            if card1 == card2:
+                return deck.card_frequencies[card1] * (deck.card_frequencies[card1] - 1) / 2
+            else:
+                return deck.card_frequencies[card1] * deck.card_frequencies[card2]
+        else:
+            # Allgemeine Berechnung für Hände mit mehr als 2 Karten
+            frequency = 1
+            for card in self.cards:
+                frequency *= deck.card_frequencies[card] / self.cards.count(card)
+            return frequency
 
     def probability_to_reach_or_exceed(self, deck, target_value=21):
         """
@@ -210,7 +210,7 @@ class Hand:
             counts[1], counts[2], counts[3], counts[4], counts[5],
             counts[6], counts[7], counts[8], counts[9], counts[10],
             total_value, minimum_value,
-            self.is_busted(), self.is_starthand(), self.can_double(), self.can_split(), frequency
+            self.is_busted(), self.is_starthand, self.can_double(), self.can_split(), frequency
         )
 
     def __repr__(self):
