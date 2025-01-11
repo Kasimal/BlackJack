@@ -1,123 +1,84 @@
 import sqlite3
-import os
-from Models.Hand import Hand
-
 
 class DatabaseManager:
-    def __init__(self, db_name="Blackjack.db"):
+    def __init__(self, db_path="Data/Blackjack.db"):
         """
-        Initialisiert den DatabaseManager mit einer SQLite-Datenbank im Ordner 'Data'.
+        Initialisiert den Datenbank-Manager mit einer Verbindung zur angegebenen SQLite-Datenbank.
 
         Args:
-            db_name (str): Der Name der SQLite-Datenbankdatei (standardmäßig 'Blackjack.db').
+            db_path (str): Pfad zur SQLite-Datenbankdatei.
         """
-        # Sicherstellen, dass der Ordner 'Data' existiert
-        self.data_dir = "Data"
-        os.makedirs(self.data_dir, exist_ok=True)
-
-        # Pfad zur Datenbankdatei
-        self.db_path = os.path.join(self.data_dir, db_name)
-        self.connection = sqlite3.connect(self.db_path)
-        self.cursor = self.connection.cursor()
-
-        # Spalten für die Datenbank definieren (1-10)
+        self.db_path = db_path
         self.card_columns = [f"card_{i}" for i in range(1, 11)]
-
-        # Tabelle erstellen, falls sie nicht existiert
+        self.connection = sqlite3.connect(self.db_path)
         self.create_table()
 
     def create_table(self):
         """
-        Erstellt die Tabelle für Hände in der Datenbank, falls sie noch nicht existiert.
+        Erstellt die Tabelle für Blackjack-Hände, falls sie nicht bereits existiert.
         """
-        self.cursor.execute('''
-            CREATE TABLE IF NOT EXISTS hands (
-                card_1 INTEGER,
-                card_2 INTEGER,
-                card_3 INTEGER,
-                card_4 INTEGER,
-                card_5 INTEGER,
-                card_6 INTEGER,
-                card_7 INTEGER,
-                card_8 INTEGER,
-                card_9 INTEGER,
-                card_10 INTEGER,
-                total_value INTEGER,
-                minimum_value INTEGER,
-                is_starthand INTEGER,
-                is_busted BOOLEAN,
-                can_double BOOLEAN,
-                can_split BOOLEAN,
-                frequency INTEGER,
-                UNIQUE (card_1, card_2, card_3, card_4, card_5, card_6, card_7, card_8, card_9, card_10)
-            )
-        ''')
-        self.connection.commit()
+        with self.connection as conn:
+            conn.execute(f'''
+                CREATE TABLE IF NOT EXISTS hands (
+                    {", ".join(f"{col} INTEGER" for col in self.card_columns)},
+                    total_value INTEGER,
+                    minimum_value INTEGER,
+                    is_starthand BOOLEAN,
+                    is_busted BOOLEAN,
+                    can_double BOOLEAN,
+                    can_split BOOLEAN,
+                    frequency INTEGER,
+                    UNIQUE ({", ".join(self.card_columns)})
+                )
+            ''')
 
-    def save_hand(self, hand, deck):
+    def save_hand(self, card_counts, total_value, minimum_value, is_starthand, is_busted, can_double, can_split, frequency):
         """
-        Speichert die gegebene Hand in der Datenbank oder aktualisiert deren Häufigkeit,
-        falls sie bereits existiert.
+        Speichert eine Hand in die Datenbank oder erhöht die Häufigkeit, falls die Hand bereits existiert.
 
         Args:
-            hand (Hand): Die Hand, die gespeichert werden soll.
-            deck (Deck): Das aktuelle Deck.
-            previous_frequency (float): Die Häufigkeit der Vorgängerhand.
+            card_counts (list): Liste der Kartenzählungen (Index 0 entspricht Karte 1, etc.).
+            total_value (int): Gesamter Wert der Hand.
+            minimum_value (int): Minimaler Wert der Hand (für Asse).
+            is_starthand (bool): Ob die Hand eine Starthand ist.
+            is_busted (bool): Ob die Hand über 21 liegt.
+            can_double (bool): Ob die Hand verdoppelt werden kann.
+            can_split (bool): Ob die Hand gesplittet werden kann.
+            frequency (int): Häufigkeit der Hand.
         """
-        # Berechne die Häufigkeit der aktuellen Hand
-        frequency = hand.calculate_frequency(deck)
+        with self.connection as conn:
+            cursor = conn.cursor()
+            cursor.execute(f'''
+                SELECT frequency FROM hands
+                WHERE {" AND ".join(f"{col} = ?" for col in self.card_columns)}
+            ''', card_counts)
 
-        # Baue die Datenbankzeile für die Hand
-        db_row = hand.to_db_row(frequency)
-
-        # Überprüfen, ob die Hand bereits existiert
-        cursor = self.connection.cursor()
-        cursor.execute('''
-            SELECT frequency FROM hands 
-            WHERE ''' + ' AND '.join(f"{col} = ?" for col in self.card_columns) + '''
-        ''', db_row[:10])  # Vergleich nur der Kartenanzahlen
-        result = cursor.fetchone()
-
-        if result:
-            current_frequency = result[0]
-            new_frequency = current_frequency + frequency
-            cursor.execute('''
-                UPDATE hands
-                SET frequency = ?
-                WHERE ''' + ' AND '.join(f"{col} = ?" for col in self.card_columns) + '''
-            ''', [new_frequency] + list(db_row[:10]))
-        else:
-            cursor.execute('''
-                INSERT INTO hands (''' + ', '.join(self.card_columns + [
-                "total_value", "minimum_value",
-                "is_starthand", "is_busted",
-                "can_double", "can_split", "frequency"
-            ]) + ''')
-                VALUES (''' + ', '.join(['?'] * len(db_row)) + ''')
-            ''', db_row)
-
-        self.connection.commit()
-
-    def save_hands(self, hands, deck):
-        """
-        Speichert eine Liste von Händen in der Datenbank.
-
-        Args:
-            hands (list of Hand): Eine Liste von Hand-Objekten.
-            deck (Deck): Das aktuelle Deck.
-        """
-        for hand in hands:
-            self.save_hand(hand, deck)
+            row = cursor.fetchone()
+            if row:
+                new_frequency = row[0] + frequency
+                cursor.execute(f'''
+                    UPDATE hands
+                    SET frequency = ?
+                    WHERE {" AND ".join(f"{col} = ?" for col in self.card_columns)}
+                ''', [new_frequency] + card_counts)
+            else:
+                cursor.execute(f'''
+                    INSERT INTO hands ({", ".join(self.card_columns)}, total_value, minimum_value,
+                                       is_starthand, is_busted, can_double, can_split, frequency)
+                    VALUES ({", ".join("?" for _ in range(len(self.card_columns) + 7))})
+                ''', card_counts + [total_value, minimum_value, is_starthand, is_busted, can_double, can_split, frequency])
 
     def fetch_all_hands(self):
         """
-        Ruft alle Hände aus der Datenbank ab.
+        Ruft alle gespeicherten Hände aus der Datenbank ab.
 
         Returns:
-            list: Eine Liste von Tupeln, die die gespeicherten Hände repräsentieren.
+            list: Eine Liste von Tupeln, die alle Hände und deren Eigenschaften repräsentieren.
         """
-        self.cursor.execute('SELECT * FROM hands')
-        return self.cursor.fetchall()
+        with self.connection as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM hands')
+            return cursor.fetchall()
 
     def close(self):
         """

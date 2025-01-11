@@ -16,24 +16,49 @@ class Deck:
             10: 16 * deck_count,  # 10, Bube, Dame, König
         }
 
+    def calculate_value(self, hand):
+        """
+        Berechnet den Gesamtwert einer Hand.
+
+        Args:
+            hand (list): Eine Liste von Karten (1-10), die die Hand repräsentiert.
+
+        Returns:
+            int: Der Gesamtwert der Hand.
+        """
+        total_value = 0
+        ace_count = 0
+
+        # Kartenwerte berechnen
+        for card in hand:
+            if card == 1:  # Ass
+                ace_count += 1
+                total_value += 11  # Zunächst zählt das Ass als 11
+            else:
+                total_value += card
+
+        # Passe den Wert an, wenn die Hand über 21 geht
+        while total_value > 21 and ace_count > 0:
+            total_value -= 10  # Ass von 11 auf 1 reduzieren
+            ace_count -= 1
+
+        return total_value
+
     def remove_card(self, card):
-        """Entfernt eine Karte aus dem Deck, reduziert ihre Häufigkeit."""
-        if card in self.card_frequencies and self.card_frequencies[card] > 0:
+        """Entfernt eine Karte aus dem Deck."""
+        if self.card_frequencies[card] > 0:
             self.card_frequencies[card] -= 1
+        else:
+            raise ValueError(f"Karte {card} ist nicht mehr im Deck verfügbar.")
 
-    def add_card(self, card):
-        """Fügt eine Karte zurück ins Deck, erhöht ihre Häufigkeit."""
-        if card in self.card_frequencies:
-            self.card_frequencies[card] += 1
+    def restore_card(self, card):
+        """Fügt eine Karte zurück ins Deck."""
+        self.card_frequencies[card] += 1
 
-    def total_cards(self, card=None):
-        """
-        Gibt die Gesamtanzahl der verbleibenden Karten im Deck zurück.
-        Wenn eine bestimmte Karte angegeben wird, wird deren Häufigkeit zurückgegeben.
-        """
-        if card is not None:
-            return self.card_frequencies.get(card, 0)
-        return sum(self.card_frequencies.values())
-
-    def __repr__(self):
-        return f"Deck({self.card_frequencies})"
+    def get_missing_cards(self, original_deck):
+        """Berechnet die fehlenden Karten im Vergleich zum ursprünglichen Deck."""
+        missing_cards = []
+        for card, count in original_deck.card_frequencies.items():
+            missing = count - self.card_frequencies[card]
+            missing_cards.extend([card] * missing)
+        return missing_cards
