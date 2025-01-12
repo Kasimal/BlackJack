@@ -1,5 +1,5 @@
-
 from Models.Deck import Deck
+from application.Hands import Hands
 from application.db import DatabaseManager
 
 
@@ -65,20 +65,29 @@ from application.db import DatabaseManager
 #     db_manager.close()
 
 def All_Hands_in_DB():
-    # Initialisiere das Deck
-    deck = Deck(deck_count=1)  # 1 Deck (kann auf 2 oder 6 geändert werden)
-
-    # Erstelle den DatabaseManager
-    db_manager = DatabaseManager()
+    # 1. Datenbank vorbereiten
+    db_path = "Data/blackjack.db"
+    db_manager = DatabaseManager(db_path)
     db_manager.create_table()
 
-    # Erstelle die Hands-Klasse
-    hands = Hands(deck, db_manager)
+    # 2. Deck initialisieren
+    deck_count = 1  # Anzahl der Decks
 
-    # Generiere alle Hände und speichere sie in der Datenbank
-    hands.generate_and_save_hands(deck)
+    # 3. Hands-Objekt erstellen
+    hands_generator = Hands(deck_count)
 
-    print("Alle möglichen Hände wurden erfolgreich in die Datenbank eingetragen.")
+    # 4. Hände generieren und speichern
+    print("Generiere und speichere alle möglichen Hände...")
+    hands_generator.generate_and_save_hands()
+    print("Alle Hände wurden erfolgreich generiert und gespeichert!")
+
+    # 5. Statusbericht
+    print("Anzahl gespeicherter Hände:")
+    with db_manager.connection:
+        cursor = db_manager.connection.cursor()
+        cursor.execute("SELECT COUNT(*) FROM hands")
+        count = cursor.fetchone()[0]
+        print(f"{count} Hände sind in der Datenbank gespeichert.")
 
 
 if __name__ == "__main__":

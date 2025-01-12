@@ -66,7 +66,8 @@ class DatabaseManager:
                     INSERT INTO hands ({", ".join(self.card_columns)}, total_value, minimum_value,
                                        is_starthand, is_busted, can_double, can_split, frequency)
                     VALUES ({", ".join("?" for _ in range(len(self.card_columns) + 7))})
-                ''', card_counts + [total_value, minimum_value, is_starthand, is_busted, can_double, can_split, frequency])
+                ''', card_counts + [total_value, minimum_value, is_starthand, is_busted, can_double, can_split,
+                                    frequency])
 
     def fetch_all_hands(self):
         """
