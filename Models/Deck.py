@@ -92,6 +92,15 @@ class Deck:
             missing_cards.extend([card] * missing)
         return missing_cards
 
+    def get_card_counts(self):
+        """
+        Gibt die Häufigkeit jeder Karte im Deck in der Reihenfolge 1 bis 10 zurück.
+
+        Returns:
+            list: Eine Liste von Häufigkeiten für jede Karte von 1 bis 10.
+        """
+        return [self.card_frequencies.get(card, 0) for card in range(1, 11)]
+
     def calculate_hand_frequency(self, hand_cards):
         """
         Berechnet die Häufigkeit einer Hand basierend auf den verfügbaren Karten im Deck.
@@ -122,3 +131,16 @@ class Deck:
                     frequency //= i  # Reduziere die Häufigkeit für identische Karten
 
         return frequency
+
+
+
+    def copy(self):
+        """
+        Erstellt eine tiefe Kopie des Decks.
+
+        Returns:
+            Deck: Eine Kopie des aktuellen Decks.
+        """
+        new_deck = Deck(deck_count=self.deck_count)
+        new_deck.card_frequencies = self.card_frequencies.copy()
+        return new_deck

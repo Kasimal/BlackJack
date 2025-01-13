@@ -32,42 +32,41 @@ class DatabaseManager:
                 )
             ''')
 
-    def save_hand(self, card_counts, total_value, minimum_value, is_starthand, is_busted, can_double, can_split, frequency):
+    def save_hand(self, deck, total_value, minimum_value, is_starthand, is_busted, can_double, can_split, frequency):
         """
-        Speichert eine Hand in die Datenbank oder erhöht die Häufigkeit, falls die Hand bereits existiert.
+        Speichert eine Hand in die Datenbank oder erhöht die Häufigkeit, falls sie bereits existiert.
+        """
+        card_counts = deck.get_card_counts()
 
-        Args:
-            card_counts (list): Liste der Kartenzählungen (Index 0 entspricht Karte 1, etc.).
-            total_value (int): Gesamter Wert der Hand.
-            minimum_value (int): Minimaler Wert der Hand (für Asse).
-            is_starthand (bool): Ob die Hand eine Starthand ist.
-            is_busted (bool): Ob die Hand über 21 liegt.
-            can_double (bool): Ob die Hand verdoppelt werden kann.
-            can_split (bool): Ob die Hand gesplittet werden kann.
-            frequency (int): Häufigkeit der Hand.
-        """
-        with self.connection as conn:
+        # Verbindung zur Datenbank herstellen
+        with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
+
+            # Überprüfe, ob die Hand bereits existiert
             cursor.execute(f'''
                 SELECT frequency FROM hands
                 WHERE {" AND ".join(f"{col} = ?" for col in self.card_columns)}
             ''', card_counts)
 
-            row = cursor.fetchone()
-            if row:
-                new_frequency = row[0] + frequency
+            result = cursor.fetchone()
+
+            if result:
+                # Hand existiert bereits -> Häufigkeit erhöhen
+                current_frequency = result[0]
+                new_frequency = current_frequency + frequency
                 cursor.execute(f'''
                     UPDATE hands
                     SET frequency = ?
                     WHERE {" AND ".join(f"{col} = ?" for col in self.card_columns)}
                 ''', [new_frequency] + card_counts)
             else:
+                # Hand existiert noch nicht -> Einfügen
                 cursor.execute(f'''
                     INSERT INTO hands ({", ".join(self.card_columns)}, total_value, minimum_value,
                                        is_starthand, is_busted, can_double, can_split, frequency)
                     VALUES ({", ".join("?" for _ in range(len(self.card_columns) + 7))})
-                ''', card_counts + [total_value, minimum_value, is_starthand, is_busted, can_double, can_split,
-                                    frequency])
+                ''', card_counts + [total_value, minimum_value, int(is_starthand), int(is_busted), int(can_double),
+                                    int(can_split), frequency])
 
     def fetch_all_hands(self):
         """

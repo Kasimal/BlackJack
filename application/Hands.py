@@ -1,92 +1,61 @@
 from Models.Deck import Deck
 from application.db import DatabaseManager
+import copy
 
 class Hands:
-    def __init__(self, deck_count=6):
+    def __init__(self, deck, db_manager):
         """
-        Initialisiert die Hands-Klasse mit einem Deck und einem DatabaseManager.
+        Initialisiert die Hands-Klasse.
 
         Args:
-            deck_count (int): Anzahl der Kartensätze im Deck.
+            deck (Deck): Das ursprüngliche Deck, das für die Hand-Generierung verwendet wird.
+            db_manager (DatabaseManager): Datenbankmanager zum Speichern der generierten Hände.
         """
-        self.deck = Deck(deck_count)
-        self.db_manager = DatabaseManager()
+        self.deck = deck
+        self.db_manager = db_manager
 
-
-    def generate_and_save_hands(self):
+    def generate_and_save_hands(self, max_cards):
         """
-        Generiert alle möglichen Hände und speichert sie in der Datenbank.
-        """
-        for card1, freq1 in self.deck.card_frequencies.items():
-            for card2, freq2 in self.deck.card_frequencies.items():
-                if card1 <= card2:  # Doppelte Kombinationen vermeiden
-                    # Erstelle eine Starthand
-                    starting_hand = [card1, card2]
-                    deck_copy = Deck(self.deck.deck_count)
-                    deck_copy.remove_card(card1)
-                    deck_copy.remove_card(card2)
-
-                    # Starte die Rekursion
-                    self.generate_hands_recursive(starting_hand, deck_copy)
-
-    def generate_hands_recursive(self, current_hand, deck, depth=0):
-
-    def generate_all_hands(self):
-        """
-        Generiert alle möglichen Hände, indem alle möglichen Starthände (zwei Karten) gebildet werden
-        und anschließend alle möglichen Ziehungen simuliert werden.
-        """
-        # Generiere alle möglichen Starthände (zwei Karten)
-        for card1, freq1 in self.deck.card_frequencies.items():
-            for card2, freq2 in self.deck.card_frequencies.items():
-                if card1 <= card2:
-                    # Erstelle eine neue Starthand mit zwei Karten
-                    temp_deck = Deck(self.deck.deck_count)
-                    temp_deck.card_frequencies = self.deck.card_frequencies.copy()
-                    starthand = Hand()
-                    starthand.add_card_from_deck(temp_deck, card1)
-                    starthand.add_card_from_deck(temp_deck, card2)
-
-                    # Starte die Rekursion mit der Starthand
-                    self.explore_hands(starthand, temp_deck)
-
-
-    def explore_hands(self, current_hand, deck, depth=0):
-        """
-        Rekursive Funktion, um alle möglichen Hände zu generieren und in die Datenbank zu speichern.
+        Generiert und speichert alle möglichen Hände bis zur angegebenen maximalen Kartenanzahl.
 
         Args:
-            current_hand (list): Die aktuelle Hand, dargestellt als Liste von Karten.
-            deck (Deck): Der aktuelle Zustand des Decks.
-            depth (int): Die Tiefe der Rekursion (Anzahl der bisher gezogenen Karten).
+            max_cards (int): Die maximale Anzahl an Karten in einer Hand.
         """
-        # Berechne Werte und Eigenschaften der aktuellen Hand
-        total_value = deck.calculate_value()
-        minimum_value = deck.calculate_value( minimum=True)
-        is_starthand = (depth == 2)
-        is_busted = (minimum_value > 21)
-        can_double = is_starthand and total_value != 21
-        can_split = is_starthand and current_hand[0] == current_hand[1]
-        frequency = deck.calculate_hand_frequency(current_hand)
+        for total_cards in range(2, max_cards + 1):
+            self.generate_hands_recursive(total_cards, [])
 
-        # Speicher die Hand in der Datenbank
-        card_counts = [current_hand.count(card) for card in range(1, 11)]
-        self.db_manager.save_hand(card_counts, total_value, minimum_value, is_starthand, is_busted, can_double, can_split, frequency)
+    def generate_hands_recursive(self, total_cards, current_hand):
+        """
+        Rekursive Funktion, um alle möglichen Hände zu generieren und zu speichern.
 
-        # Stoppe, wenn die Hand gebustet ist
-        if is_busted:
+        Args:
+            total_cards (int): Die maximale Anzahl an Karten in einer Hand.
+            current_hand (list): Die aktuell generierte Hand.
+        """
+        # Basisfall: Maximale Anzahl an Karten erreicht
+        if len(current_hand) == total_cards:
+            # Erstelle eine Kopie des Decks und entferne die aktuellen Karten
+            deck = self.deck.copy()
+            for card in current_hand:
+                deck.remove_card(card)
+
+            # Berechne die Eigenschaften der Hand
+            total_value = deck.calculate_value(minimum=False)
+            minimum_value = deck.calculate_value(minimum=True)
+            is_starthand = len(current_hand) == 2
+            is_busted = total_value > 21
+            can_double = is_starthand and total_value != 21
+            can_split = is_starthand and current_hand[0] == current_hand[1]
+            frequency = deck.calculate_hand_frequency(current_hand)
+
+            # Speichere die Hand in der Datenbank
+            self.db_manager.save_hand(deck, total_value, minimum_value, is_starthand, is_busted, can_double, can_split, frequency)
             return
 
-        # Rekursiv weitere Karten ziehen
-        for card, count in deck.card_frequencies.items():
-            if count > 0:
-                # Erstelle eine Kopie des Decks und ziehe die Karte
-                new_deck = Deck(deck.deck_count)
-                new_deck.card_frequencies = deck.card_frequencies.copy()
-                new_deck.restore_card(card)
+        # Rekursionsschritt: Hand mit einer weiteren Karte erweitern
+        for card, frequency in self.deck.card_frequencies.items():
+            if frequency > 0:
+                next_hand = current_hand + [card]
+                self.generate_hands_recursive(total_cards, next_hand)
 
-                # Erstelle die neue Hand
-                new_hand = current_hand + [card]
 
-                # Rekursiver Aufruf
-                self.generate_hands_recursive(new_hand, new_deck, depth + 1)
