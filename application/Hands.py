@@ -1,19 +1,35 @@
-import csv
-import json
-
-from Deck import Deck
-from Hand import Hand
-
+from Models.Deck import Deck
+from application.db import DatabaseManager
 
 class Hands:
-    def __init__(self, deck):
+    def __init__(self, deck_count=6):
         """
-        Initialisiert die Klasse Hands mit einem gegebenen Deck.
-        Speichert alle möglichen Hände und deren Werte.
-        """
-        self.deck = deck
-        self.all_hands = []
+        Initialisiert die Hands-Klasse mit einem Deck und einem DatabaseManager.
 
+        Args:
+            deck_count (int): Anzahl der Kartensätze im Deck.
+        """
+        self.deck = Deck(deck_count)
+        self.db_manager = DatabaseManager()
+
+
+    def generate_and_save_hands(self):
+        """
+        Generiert alle möglichen Hände und speichert sie in der Datenbank.
+        """
+        for card1, freq1 in self.deck.card_frequencies.items():
+            for card2, freq2 in self.deck.card_frequencies.items():
+                if card1 <= card2:  # Doppelte Kombinationen vermeiden
+                    # Erstelle eine Starthand
+                    starting_hand = [card1, card2]
+                    deck_copy = Deck(self.deck.deck_count)
+                    deck_copy.remove_card(card1)
+                    deck_copy.remove_card(card2)
+
+                    # Starte die Rekursion
+                    self.generate_hands_recursive(starting_hand, deck_copy)
+
+    def generate_hands_recursive(self, current_hand, deck, depth=0):
 
     def generate_all_hands(self):
         """
@@ -35,101 +51,42 @@ class Hands:
                     self.explore_hands(starthand, temp_deck)
 
 
-    def explore_hands(self, current_hand, deck):
+    def explore_hands(self, current_hand, deck, depth=0):
         """
-        Rekursive Funktion, um alle möglichen Hände zu generieren.
+        Rekursive Funktion, um alle möglichen Hände zu generieren und in die Datenbank zu speichern.
 
         Args:
-            current_hand (Hand): Die aktuelle Hand.
+            current_hand (list): Die aktuelle Hand, dargestellt als Liste von Karten.
             deck (Deck): Der aktuelle Zustand des Decks.
+            depth (int): Die Tiefe der Rekursion (Anzahl der bisher gezogenen Karten).
         """
-        # Berechne den Wert der aktuellen Hand
-        current_value = current_hand.calculate_value()
-        minimum_value = current_hand.calculate_value(minimum=True)
+        # Berechne Werte und Eigenschaften der aktuellen Hand
+        total_value = deck.calculate_value()
+        minimum_value = deck.calculate_value( minimum=True)
+        is_starthand = (depth == 2)
+        is_busted = (minimum_value > 21)
+        can_double = is_starthand and total_value != 21
+        can_split = is_starthand and current_hand[0] == current_hand[1]
+        frequency = deck.calculate_hand_frequency(current_hand)
 
-        # Füge die Hand (sortierte Starthand + gezogene Karten) und deren Wert hinzu
-        self.all_hands.append((current_hand, current_value))
+        # Speicher die Hand in der Datenbank
+        card_counts = [current_hand.count(card) for card in range(1, 11)]
+        self.db_manager.save_hand(card_counts, total_value, minimum_value, is_starthand, is_busted, can_double, can_split, frequency)
 
-        # Stoppe das Ziehen, wenn der Wert der Hand über 21 beträgt
-        if minimum_value >= 21:
+        # Stoppe, wenn die Hand gebustet ist
+        if is_busted:
             return
 
-        # Für jede Karte im Deck, die noch verfügbar ist
-        for card, frequency in deck.card_frequencies.items():
-            if frequency > 0:
-                # Erstelle eine Kopie der aktuellen Hand
-                new_hand = Hand()
-                new_hand.cards = current_hand.cards[:]  # Kopiere die aktuelle Hand
-                new_hand.add_card_from_deck(deck, card)
+        # Rekursiv weitere Karten ziehen
+        for card, count in deck.card_frequencies.items():
+            if count > 0:
+                # Erstelle eine Kopie des Decks und ziehe die Karte
+                new_deck = Deck(deck.deck_count)
+                new_deck.card_frequencies = deck.card_frequencies.copy()
+                new_deck.restore_card(card)
 
-                # # Erstelle ein neues Deck, indem die gezogene Karte entfernt wird
-                # new_deck = Deck(deck_count=deck.deck_count)
-                # new_deck.card_frequencies = deck.card_frequencies.copy()
-                # new_deck.remove_card(card)
+                # Erstelle die neue Hand
+                new_hand = current_hand + [card]
 
-                # Rekursiv die neuen Kombinationen erkunden
-                self.explore_hands(new_hand, deck)
-
-                # Rückgängig machen, um Karte für weitere Kombinationen wieder verfügbar zu machen
-                deck.add_card(card)
-
-    def save_to_json(self, filename):
-        """
-        Speichert alle generierten Hände und deren Werte in eine Datei.
-
-        Args:
-            filename (str): Der Name der Datei, in die die Hände geschrieben werden.
-        """
-        with open(filename, "w") as file:
-            json.dump(self.all_hands, file, indent=4)
-
-
-    def save_to_csv(self, filename):
-        """
-        Speichert alle generierten Hände und deren Werte in eine CSV-Datei.
-
-        Args:
-            filename (str): Der Name der Datei, in die die Hände geschrieben werden.
-        """
-        with open(filename, mode="w", newline="") as file:
-            writer = csv.writer(file)
-            # Schreibe die Header
-            writer.writerow(["Starthand", "Gezogene Karten", "Wert"])
-
-            # Schreibe alle Hände und deren Werte
-            for current_hand, value in self.all_hands:
-                starthand = sorted(current_hand.cards[:2])  # Erste zwei Karten sind die Starthand
-                drawn_cards = current_hand.cards[2:]  # Alle restlichen Karten sind die gezogenen Karten
-                writer.writerow([
-                    ", ".join(map(str, starthand)),
-                    ", ".join(map(str, drawn_cards)),
-                    value
-                ])
-
-
-    def get_hands(self):
-        """
-        Gibt alle generierten Hände mit ihrem Wert zurück.
-        """
-        return self.all_hands
-
-# Erstelle ein Deck
-deck = Deck(deck_count=1)
-
-# Erstelle eine Instanz von Hands
-hands = Hands(deck)
-
-# Generiere alle möglichen Hände
-hands.generate_all_hands()
-
-# Zeige die generierten Hände mit ihren Werten
-#for cards, value in hands.get_hands():
-#    print(f"Karten: {cards}, Wert: {value}")
-
-# Speichere die Hände in einer CSV-Datei
-hands.save_to_csv("hands.csv")
-
-# Speichere die Hände in einer Datei
-#hands.save_to_json("hands.json")
-
-
+                # Rekursiver Aufruf
+                self.generate_hands_recursive(new_hand, new_deck, depth + 1)
