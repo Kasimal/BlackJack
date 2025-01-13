@@ -1,7 +1,6 @@
 from Models.Deck import Deck
 from application.db import DatabaseManager
 
-
 class Hands:
     def __init__(self, deck_count=6):
         """
@@ -12,6 +11,7 @@ class Hands:
         """
         self.deck = Deck(deck_count)
         self.db_manager = DatabaseManager()
+
 
     def generate_and_save_hands(self):
         """
@@ -30,6 +30,28 @@ class Hands:
                     self.generate_hands_recursive(starting_hand, deck_copy)
 
     def generate_hands_recursive(self, current_hand, deck, depth=0):
+
+    def generate_all_hands(self):
+        """
+        Generiert alle möglichen Hände, indem alle möglichen Starthände (zwei Karten) gebildet werden
+        und anschließend alle möglichen Ziehungen simuliert werden.
+        """
+        # Generiere alle möglichen Starthände (zwei Karten)
+        for card1, freq1 in self.deck.card_frequencies.items():
+            for card2, freq2 in self.deck.card_frequencies.items():
+                if card1 <= card2:
+                    # Erstelle eine neue Starthand mit zwei Karten
+                    temp_deck = Deck(self.deck.deck_count)
+                    temp_deck.card_frequencies = self.deck.card_frequencies.copy()
+                    starthand = Hand()
+                    starthand.add_card_from_deck(temp_deck, card1)
+                    starthand.add_card_from_deck(temp_deck, card2)
+
+                    # Starte die Rekursion mit der Starthand
+                    self.explore_hands(starthand, temp_deck)
+
+
+    def explore_hands(self, current_hand, deck, depth=0):
         """
         Rekursive Funktion, um alle möglichen Hände zu generieren und in die Datenbank zu speichern.
 
@@ -68,4 +90,3 @@ class Hands:
 
                 # Rekursiver Aufruf
                 self.generate_hands_recursive(new_hand, new_deck, depth + 1)
-
