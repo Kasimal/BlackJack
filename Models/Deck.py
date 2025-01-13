@@ -28,42 +28,36 @@ class Deck:
             10: 16 * deck_count,  # 10, Bube, Dame, König
         }
 
-    def calculate_value(self, minimum=False):
+    def calculate_hand_value(self, missing_cards, minimum=False):
         """
-        Berechnet den Gesamtwert einer Hand basierend auf den fehlenden Karten im Deck.
+        Berechnet den Wert der Hand basierend auf den fehlenden Karten.
 
         Args:
-            minimum (bool): Wenn True, wird der minimale Wert (Ass = 1) berechnet.
+            missing_cards (dict): Ein Dictionary, das die Anzahl der fehlenden Karten angibt.
+            minimum (bool): Wenn True, wird der minimale Wert der Hand berechnet (z. B. As = 1).
 
         Returns:
-            int: Der berechnete Wert der Hand.
+            int: Der Wert der Hand.
         """
-        total_value = 0
-        missing_count = sum(self.original_card_frequencies[card] - self.card_frequencies.get(card, 0)
-                            for card in self.original_card_frequencies if card > 0)
+        value = 0
+        ace_count = 0
 
-        for card in self.original_card_frequencies:
-            count_in_hand = missing_count - (self.original_card_frequencies[card] - self.card_frequencies.get(card, 0))
-
-            # Überspringe ungültige Karten (z. B. wenn card = 0 oder nicht im Deck)
-            if card < 1 or card > 10:
-                continue
-
+        for card, count in missing_cards.items():
             if card == 1:  # Ass
-                total_value += count_in_hand * (1 if minimum else 11)
+                ace_count += count
             else:
-                total_value += count_in_hand * card
+                value += card * count
 
-        # Anpassung, wenn der Wert 21 überschreitet und Asse vorhanden sind
-        if not minimum and total_value > 21:
-            # Berechne die Anzahl der fehlenden Asse
-            ace_count = self.original_card_frequencies.get(1, 0) - self.card_frequencies.get(1, 0)
-
-            while total_value > 21 and ace_count > 0:
-                total_value -= 10  # Ass wird von 11 auf 1 reduziert
+        # Ass-Werte hinzufügen
+        if minimum:
+            value += ace_count  # Alle Asse als 1 zählen
+        else:
+            value += ace_count * 11  # Alle Asse als 11 zählen
+            while value > 21 and ace_count > 0:
+                value -= 10  # Reduziere Ass von 11 auf 1
                 ace_count -= 1
 
-        return total_value
+        return value
 
     def remove_card(self, card):
         """
@@ -84,12 +78,18 @@ class Deck:
         """Fügt eine Karte zurück ins Deck."""
         self.card_frequencies[card] += 1
 
-    def get_missing_cards(self, original_deck):
-        """Berechnet die fehlenden Karten im Vergleich zum ursprünglichen Deck."""
-        missing_cards = []
-        for card, count in original_deck.card_frequencies.items():
-            missing = count - self.card_frequencies[card]
-            missing_cards.extend([card] * missing)
+    def get_missing_cards(self):
+        """
+        Berechnet die Differenz zwischen den ursprünglichen Karten und den verbleibenden Karten im Deck.
+
+        Returns:
+            dict: Ein Dictionary mit den fehlenden Karten und deren Anzahl.
+        """
+        missing_cards = {}
+        for card, original_count in self.original_card_frequencies.items():
+            current_count = self.card_frequencies.get(card, 0)
+            if original_count > current_count:
+                missing_cards[card] = original_count - current_count
         return missing_cards
 
     def get_card_counts(self):
@@ -131,8 +131,6 @@ class Deck:
                     frequency //= i  # Reduziere die Häufigkeit für identische Karten
 
         return frequency
-
-
 
     def copy(self):
         """

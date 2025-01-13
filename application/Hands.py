@@ -40,8 +40,9 @@ class Hands:
                 deck.remove_card(card)
 
             # Berechne die Eigenschaften der Hand
-            total_value = deck.calculate_value(minimum=False)
-            minimum_value = deck.calculate_value(minimum=True)
+            missing_cards = deck.get_missing_cards()
+            total_value = deck.calculate_hand_value(missing_cards)
+            minimum_value = deck.calculate_hand_value(missing_cards, minimum=True)
             is_starthand = len(current_hand) == 2
             is_busted = total_value > 21
             can_double = is_starthand and total_value != 21
@@ -49,7 +50,16 @@ class Hands:
             frequency = deck.calculate_hand_frequency(current_hand)
 
             # Speichere die Hand in der Datenbank
-            self.db_manager.save_hand(deck, total_value, minimum_value, is_starthand, is_busted, can_double, can_split, frequency)
+            self.db_manager.save_hand(
+                deck,
+                total_value,
+                minimum_value,
+                is_starthand,
+                is_busted,
+                can_double,
+                can_split,
+                frequency
+            )
             return
 
         # Rekursionsschritt: Hand mit einer weiteren Karte erweitern
