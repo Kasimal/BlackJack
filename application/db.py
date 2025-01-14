@@ -9,7 +9,7 @@ class DatabaseManager:
             db_path (str): Pfad zur SQLite-Datenbankdatei.
         """
         self.db_path = db_path
-        self.card_columns = [f"card_{i}" for i in range(1, 11)]
+        self.card_columns = [f"c{i}" for i in range(1, 11)]
         self.connection = sqlite3.connect(self.db_path)
         self.create_table()
 

@@ -1,3 +1,6 @@
+from collections import Counter
+import math
+
 class Deck:
     def __init__(self, deck_count=1):
         """Erstellt ein Deck mit Kartenwerten von 1 bis 10 und ihren Häufigkeiten."""
@@ -59,6 +62,30 @@ class Deck:
 
         return value
 
+    def calculate_hand_frequency(self, missing_cards):
+        """
+        Berechnet die Häufigkeit einer Hand basierend auf den fehlenden Karten.
+
+        Args:
+            missing_cards (list): Eine Liste mit den fehlenden Karten.
+
+        Returns:
+            int: Die Häufigkeit der Hand.
+        """
+        card_counts = Counter(missing_cards)  # Zähle, wie viele Karten welchen Typs fehlen
+        frequency = 1
+
+        # Berechne die Häufigkeit basierend auf den Karten im Deck
+        for card, count in card_counts.items():
+            original_count = self.original_card_frequencies[card]  # Anzahl der Karten im Deck
+
+            # Berechne die Häufigkeit der Hand
+            for i in range(count):
+                frequency *= (original_count - i)  # Berücksichtige jede Karte der Hand
+            frequency //= math.factorial(count)  # Teile durch die Anzahl der Permutationen
+
+        return frequency
+
     def remove_card(self, card):
         """
         Entfernt eine Karte aus dem Deck, indem ihre Häufigkeit um 1 reduziert wird.
@@ -100,37 +127,6 @@ class Deck:
             list: Eine Liste von Häufigkeiten für jede Karte von 1 bis 10.
         """
         return [self.card_frequencies.get(card, 0) for card in range(1, 11)]
-
-    def calculate_hand_frequency(self, hand_cards):
-        """
-        Berechnet die Häufigkeit einer Hand basierend auf den verfügbaren Karten im Deck.
-
-        Args:
-            hand_cards (list): Eine Liste von Karten, die die Hand darstellen.
-
-        Returns:
-            int: Die Häufigkeit der Hand.
-        """
-        frequency = 1  # Start mit der Grundhäufigkeit
-
-        # Erstelle eine Kopie der Frequenzen, um das Deck während der Berechnung nicht zu verändern
-        available_frequencies = self.card_frequencies.copy()
-
-        for card in hand_cards:
-            if available_frequencies[card] <= 0:
-                return 0  # Falls die Karte nicht mehr verfügbar ist, ist die Häufigkeit 0
-            frequency *= available_frequencies[card]
-            available_frequencies[card] -= 1  # Reduziere die Frequenz, da die Karte benutzt wurde
-
-        # Dividiere durch die Permutationsmöglichkeiten der Karten in der Hand
-        # Beispiel: Für zwei gleiche Karten wie [10, 10] muss durch 2 geteilt werden
-        for card in set(hand_cards):
-            count = hand_cards.count(card)
-            if count > 1:
-                for i in range(1, count + 1):
-                    frequency //= i  # Reduziere die Häufigkeit für identische Karten
-
-        return frequency
 
     def copy(self):
         """
