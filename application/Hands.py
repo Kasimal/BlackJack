@@ -1,6 +1,5 @@
 from Models.Deck import Deck
 from application.db import DatabaseManager
-import copy
 
 class Hands:
     def __init__(self, deck, db_manager):
@@ -14,58 +13,55 @@ class Hands:
         self.deck = deck
         self.db_manager = db_manager
 
-    def generate_and_save_hands(self, max_cards):
+    def generate_and_save_hands(self):
         """
-        Generiert und speichert alle möglichen Hände bis zur angegebenen maximalen Kartenanzahl.
+        Generiert und speichert alle möglichen Hände mit einem maximalen minimum_value von 21.
+        Die Hände werden sortiert generiert und gespeichert.
+        """
+        self._generate_hands_recursive([])
+
+    def _generate_hands_recursive(self, current_hand, start_card=1):
+        """
+        Rekursive Funktion zur Generierung von Händen in sortierter Reihenfolge.
 
         Args:
-            max_cards (int): Die maximale Anzahl an Karten in einer Hand.
+            current_hand (list): Die aktuelle Hand als Liste der Kartenzahlen.
+            start_card (int): Die minimale Karte, die in dieser Iteration hinzugefügt werden darf.
         """
-        for total_cards in range(2, max_cards + 1):
-            self.generate_hands_recursive(total_cards, [])
+        # Berechne den Minimalwert der aktuellen Hand
+        minimum_value = self.deck.calculate_hand_value(current_hand, minimum=True)
 
-    def generate_hands_recursive(self, total_cards, current_hand):
-        """
-        Rekursive Funktion, um alle möglichen Hände zu generieren und zu speichern.
-
-        Args:
-            total_cards (int): Die maximale Anzahl an Karten in einer Hand.
-            current_hand (list): Die aktuell generierte Hand.
-        """
-        # Basisfall: Maximale Anzahl an Karten erreicht
-        if len(current_hand) == total_cards:
-            # Erstelle eine Kopie des Decks und entferne die aktuellen Karten
-            deck = self.deck.copy()
-            for card in current_hand:
-                deck.remove_card(card)
-
-            # Berechne die Eigenschaften der Hand
-            missing_cards = deck.get_missing_cards()
-            total_value = deck.calculate_hand_value(missing_cards)
-            minimum_value = deck.calculate_hand_value(missing_cards, minimum=True)
-            is_starthand = len(current_hand) == 2
-            is_busted = total_value > 21
-            can_double = is_starthand and total_value != 21
-            can_split = is_starthand and current_hand[0] == current_hand[1]
-            frequency = deck.calculate_hand_frequency(current_hand)
-
-            # Speichere die Hand in der Datenbank
-            self.db_manager.save_hand(
-                deck,
-                total_value,
-                minimum_value,
-                is_starthand,
-                is_busted,
-                can_double,
-                can_split,
-                frequency
-            )
+        # Abbruchbedingung: Wenn der Mindestwert der Hand > 21 ist, keine weitere Berechnung
+        if minimum_value > 21:
             return
 
-        # Rekursionsschritt: Hand mit einer weiteren Karte erweitern
-        for card, frequency in self.deck.card_frequencies.items():
-            if frequency > 0:
-                next_hand = current_hand + [card]
-                self.generate_hands_recursive(total_cards, next_hand)
+        # Berechne den Gesamtwert der aktuellen Hand
+        total_value = self.deck.calculate_hand_value(current_hand)
+
+        # Eigenschaften der Hand berechnen
+        is_starthand = len(current_hand) == 2
+        is_busted = minimum_value > 21
+        can_double = is_starthand and total_value < 21
+        can_split = is_starthand and len(current_hand) == 2 and current_hand[0] == current_hand[1]
+
+        # Häufigkeit der aktuellen Hand berechnen
+        frequency = self.deck.calculate_hand_frequency(current_hand)
+
+        # Hand speichern
+        self.db_manager.save_hand(
+            current_hand, total_value, minimum_value, is_starthand, is_busted, can_double, can_split, frequency
+        )
+
+        # Erzeuge neue Hände, indem jede mögliche Karte zur aktuellen Hand hinzugefügt wird
+        for card in self.deck.get_available_cards():
+            if card >= start_card:  # Nur Karten hinzufügen, die >= der letzten Karte sind
+                next_hand = current_hand + [card]  # Füge die Karte zur aktuellen Hand hinzu
+                if self.deck.original_card_frequencies[card] - next_hand.count(card) >= 0:
+                    print(next_hand)
+                    self._generate_hands_recursive(next_hand, start_card=card)
+
+
+
+
 
 

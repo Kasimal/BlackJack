@@ -18,49 +18,31 @@ class Deck:
             9: 4 * deck_count,
             10: 16 * deck_count,  # 10, Bube, Dame, König
         }
-        self.original_card_frequencies = {
-            1: 4 * deck_count,  # Ass
-            2: 4 * deck_count,
-            3: 4 * deck_count,
-            4: 4 * deck_count,
-            5: 4 * deck_count,
-            6: 4 * deck_count,
-            7: 4 * deck_count,
-            8: 4 * deck_count,
-            9: 4 * deck_count,
-            10: 16 * deck_count,  # 10, Bube, Dame, König
-        }
+        self.original_card_frequencies = self.card_frequencies.copy()
 
-    def calculate_hand_value(self, missing_cards, minimum=False):
+    def calculate_hand_value(self, hand, minimum=False):
         """
-        Berechnet den Wert der Hand basierend auf den fehlenden Karten.
+        Berechnet den Wert einer Hand.
 
         Args:
-            missing_cards (dict): Ein Dictionary, das die Anzahl der fehlenden Karten angibt.
-            minimum (bool): Wenn True, wird der minimale Wert der Hand berechnet (z. B. As = 1).
+            hand (dict or list): Die Hand als Wörterbuch (Kartenwert -> Anzahl) oder Liste.
+            minimum (bool): Wenn True, wird der minimale Wert der Hand berechnet.
 
         Returns:
-            int: Der Wert der Hand.
+            int: Der berechnete Wert der Hand.
         """
-        value = 0
-        ace_count = 0
+        # Wenn die Hand eine Liste ist, wandle sie in ein Wörterbuch um
+        if isinstance(hand, list):
+            hand = Counter(hand)
 
-        for card, count in missing_cards.items():
-            if card == 1:  # Ass
-                ace_count += count
-            else:
-                value += card * count
-
-        # Ass-Werte hinzufügen
-        if minimum:
-            value += ace_count  # Alle Asse als 1 zählen
-        else:
-            value += ace_count * 11  # Alle Asse als 11 zählen
-            while value > 21 and ace_count > 0:
-                value -= 10  # Reduziere Ass von 11 auf 1
+        # Berechnung basierend auf dem Wörterbuch
+        total_value = sum(card * count for card, count in hand.items())
+        if not minimum:
+            ace_count = hand.get(1, 0)
+            while ace_count > 0 and total_value <= 11:
+                total_value += 10
                 ace_count -= 1
-
-        return value
+        return total_value
 
     def calculate_hand_frequency(self, missing_cards):
         """
@@ -105,19 +87,36 @@ class Deck:
         """Fügt eine Karte zurück ins Deck."""
         self.card_frequencies[card] += 1
 
+    # def get_missing_cards(self):
+    #     """
+    #     Berechnet die Differenz zwischen den ursprünglichen Karten und den verbleibenden Karten im Deck.
+    #
+    #     Returns:
+    #         dict: Ein Dictionary mit den fehlenden Karten und deren Anzahl.
+    #     """
+    #     missing_cards = {}
+    #     for card, original_count in self.original_card_frequencies.items():
+    #         current_count = self.card_frequencies.get(card, 0)
+    #         if original_count > current_count:
+    #             missing_cards[card] = original_count - current_count
+    #     return missing_cards
+
+    def get_available_cards(self):
+        """
+        Gibt eine Liste der Kartenwerte zurück, die im Deck verfügbar sind.
+        """
+        return [card for card, freq in self.original_card_frequencies.items() if freq > 0]
+
     def get_missing_cards(self):
         """
-        Berechnet die Differenz zwischen den ursprünglichen Karten und den verbleibenden Karten im Deck.
-
-        Returns:
-            dict: Ein Dictionary mit den fehlenden Karten und deren Anzahl.
+        Berechnet die Differenz zwischen dem ursprünglichen Deck und dem aktuellen Zustand des Decks.
+        Gibt ein Wörterbuch zurück, das die fehlenden Karten und deren Häufigkeiten darstellt.
         """
-        missing_cards = {}
-        for card, original_count in self.original_card_frequencies.items():
-            current_count = self.card_frequencies.get(card, 0)
-            if original_count > current_count:
-                missing_cards[card] = original_count - current_count
-        return missing_cards
+        return {
+            card: self.original_card_frequencies[card] - self.card_frequencies.get(card, 0)
+            for card in self.original_card_frequencies
+            if self.original_card_frequencies[card] > self.card_frequencies.get(card, 0)
+        }
 
     def get_card_counts(self):
         """
