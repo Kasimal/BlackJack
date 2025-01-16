@@ -1,7 +1,7 @@
 import unittest
 from Models.Deck import Deck
 
-class MyTestCase(unittest.TestCase):
+class FrequencyTest(unittest.TestCase):
     def test_frequencies(self):
         deck_count = 1  # Anzahl der Decks
         deck = Deck(deck_count)  # Ein Deck
