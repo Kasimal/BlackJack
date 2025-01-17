@@ -39,6 +39,7 @@ class Hands:
         total_value = self.deck.calculate_hand_value(current_hand)
 
         # Eigenschaften der Hand berechnen
+        is_blackjack = total_value == 21 and len(current_hand) == 2
         is_starthand = len(current_hand) == 2
         is_busted = minimum_value > 21
         can_double = is_starthand and total_value < 21
@@ -49,7 +50,7 @@ class Hands:
 
         # Hand speichern
         self.db_manager.save_hand(
-            current_hand, total_value, minimum_value, is_starthand, is_busted, can_double, can_split, frequency
+            current_hand, total_value, minimum_value, is_blackjack, is_starthand, is_busted, can_double, can_split, frequency
         )
 
         # Erzeuge neue Hände, indem jede mögliche Karte zur aktuellen Hand hinzugefügt wird

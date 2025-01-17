@@ -24,6 +24,7 @@ class DatabaseManager:
                     hand_text VARCHAR,
                     total_value INTEGER,
                     minimum_value INTEGER,
+                    is_blackjack BOOLEAN,
                     is_starthand BOOLEAN,
                     is_busted BOOLEAN,
                     can_double BOOLEAN,
@@ -43,38 +44,7 @@ class DatabaseManager:
                 DROP TABLE IF EXISTS hands;
             ''')
 
-    # def save_hand(self, hand, total_value, minimum_value, is_starthand, is_busted, can_double, can_split, frequency):
-    #     """
-    #     Speichert eine Hand in der Datenbank.
-    #     """
-    #     card_counts = [hand.count(card) for card in range(1, 11)]  # Zähle jede Karte in der Hand
-    #     hand_text = ",".join(map(str, hand))  # Wandelt die Hand in einen Textstring um
-    #     with self.connection as conn:
-    #         cursor = conn.cursor()
-    #         # Prüfen, ob die Hand bereits existiert
-    #         cursor.execute(f'''
-    #             SELECT frequency FROM hands WHERE {self._generate_where_clause(card_counts)}
-    #         ''', card_counts)
-    #         result = cursor.fetchone()
-    #
-    #         if result:
-    #             # Häufigkeit aktualisieren, wenn Hand existiert
-    #             new_frequency = result[0] + frequency
-    #             cursor.execute(f'''
-    #                 UPDATE hands
-    #                 SET frequency = ?
-    #                 WHERE {self._generate_where_clause(card_counts)}
-    #             ''', [new_frequency] + card_counts)
-    #         else:
-    #             # Neue Hand einfügen
-    #             cursor.execute(f'''
-    #                 INSERT INTO hands ({", ".join(self.card_columns)}, hand_text, total_value, minimum_value,
-    #                                    is_starthand, is_busted, can_double, can_split, frequency)
-    #                 VALUES ({", ".join("?" for _ in range(len(self.card_columns) + 7))})
-    #             ''', card_counts + [hand_text, total_value, minimum_value, is_starthand, is_busted, can_double, can_split,
-    #                                 frequency])
-
-    def save_hand(self, hand, total_value, minimum_value, is_starthand, is_busted, can_double, can_split, frequency):
+    def save_hand(self, hand, total_value, minimum_value, is_blackjack, is_starthand, is_busted, can_double, can_split, frequency):
         """
         Speichert eine Hand in der Datenbank.
         Args:
@@ -111,10 +81,10 @@ class DatabaseManager:
                 # Neue Hand einfügen
                 cursor.execute(f'''
                     INSERT INTO hands ({", ".join(self.card_columns)}, hand_text, total_value, minimum_value,
-                                       is_starthand, is_busted, can_double, can_split, frequency)
+                                       is_blackjack, is_starthand, is_busted, can_double, can_split, frequency)
                     VALUES ({", ".join("?" for _ in range(len(self.card_columns) + 8))})
-                ''', card_counts + [hand_text, total_value, minimum_value, is_starthand, is_busted, can_double,
-                                    can_split, frequency])
+                ''', card_counts + [hand_text, total_value, minimum_value, is_blackjack, is_starthand, is_busted,
+                                    can_double, can_split, frequency])
 
     def _generate_where_clause(self, card_counts):
         """
