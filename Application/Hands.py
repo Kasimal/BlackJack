@@ -39,11 +39,11 @@ class Hands:
         total_value = self.deck.calculate_hand_value(current_hand)
 
         # Eigenschaften der Hand berechnen
-        is_blackjack = total_value == 21 and len(current_hand) == 2
         is_starthand = len(current_hand) == 2
+        is_blackjack = total_value == 21 and is_starthand
         is_busted = minimum_value > 21
         can_double = is_starthand and total_value < 21
-        can_split = is_starthand and len(current_hand) == 2 and current_hand[0] == current_hand[1]
+        can_split = is_starthand and current_hand[0] == current_hand[1]
 
         # Häufigkeit der aktuellen Hand berechnen
         frequency = self.deck.calculate_hand_frequency(current_hand)
