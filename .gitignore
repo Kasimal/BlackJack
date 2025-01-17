@@ -171,4 +171,4 @@ cython_debug/
 .pypirc
 
 /Data/BlackjackDB
-/application/hands.csv
+/Application/hands.csv

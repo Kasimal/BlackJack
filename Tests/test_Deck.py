@@ -18,11 +18,11 @@ class FrequencyTest(unittest.TestCase):
         frequency_1_1_2 = deck.calculate_hand_frequency(cards_1_1_2)
         frequency_1_10_10 = deck.calculate_hand_frequency(cards_1_10_10)
 
-        print(f"Häufigkeit von Ass 2: {frequency_1_2}")  # Erwartet: 16
-        print(f"Häufigkeit von Ass Ass: {frequency_1_1}")  # Erwartet: 6
-        print(f"Häufigkeit von Ass Ass Ass: {frequency_1_1_1}")  # Erwartet: 4
-        print(f"Häufigkeit von 10 10 9: {frequency_1_1_2}")  # Erwartet: 24
-        print(f"Häufigkeit von Ass 10 10: {frequency_1_10_10}")  # Erwartet: 480
+        print(f"Häufigkeit von Ass 2: {frequency_1_2} Erwartet: 16")
+        print(f"Häufigkeit von Ass Ass: {frequency_1_1} Erwartet: 6")
+        print(f"Häufigkeit von Ass Ass Ass: {frequency_1_1_1} Erwartet: 4")
+        print(f"Häufigkeit von 10 10 9: {frequency_1_1_2} Erwartet: 24")
+        print(f"Häufigkeit von Ass 10 10: {frequency_1_10_10} Erwartet: 480")
 
         self.assertEqual(frequency_1_2,16)
         self.assertEqual(frequency_1_1, 6)

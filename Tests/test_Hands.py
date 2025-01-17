@@ -1,7 +1,6 @@
 import unittest
 from collections import Counter
-
-from application.db import DatabaseManager
+from Application.db import DatabaseManager
 
 class TestBlackjackHands(unittest.TestCase):
     def setUp(self):

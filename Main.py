@@ -1,6 +1,6 @@
 from Models.Deck import Deck
-from application.Hands import Hands
-from application.db import DatabaseManager
+from Application.Hands import Hands
+from Application.db import DatabaseManager
 
 def All_Hands_in_DB():
     # 1. Datenbank vorbereiten
@@ -29,19 +29,6 @@ def All_Hands_in_DB():
         count = cursor.fetchone()[0]
         print(f"{count} Hände sind in der Datenbank gespeichert.")
 
-def count_3_card_hands():
-    count = 0
-    for card1 in range(1, 11):  # 1 repräsentiert Ass, 10 repräsentiert 10/J/Q/K
-        for card2 in range(card1, 11):
-            for card3 in range(card2, 11):
-                if card1 + card2 + card3 <= 21:
-                    count += 1
-    return count
-
-total_3_card_hands = count_3_card_hands()
-print(f"Anzahl der nicht-busted Hände mit 3 Karten: {total_3_card_hands}")
-
 if __name__ == "__main__":
-    #All_Hands_in_DB()
-    count_3_card_hands()
+    All_Hands_in_DB()
 

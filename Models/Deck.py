@@ -44,17 +44,17 @@ class Deck:
                 ace_count -= 1
         return total_value
 
-    def calculate_hand_frequency(self, missing_cards):
+    def calculate_hand_frequency(self, cards):
         """
         Berechnet die Häufigkeit einer Hand basierend auf den fehlenden Karten.
 
         Args:
-            missing_cards (list): Eine Liste mit den fehlenden Karten.
+            cards (list): Eine Liste mit den fehlenden Karten.
 
         Returns:
             int: Die Häufigkeit der Hand.
         """
-        card_counts = Counter(missing_cards)  # Zähle, wie viele Karten welchen Typs fehlen
+        card_counts = Counter(cards)  # Zähle, wie viele Karten welchen Typs fehlen
         frequency = 1
 
         # Berechne die Häufigkeit basierend auf den Karten im Deck
@@ -86,20 +86,6 @@ class Deck:
     def restore_card(self, card):
         """Fügt eine Karte zurück ins Deck."""
         self.card_frequencies[card] += 1
-
-    # def get_missing_cards(self):
-    #     """
-    #     Berechnet die Differenz zwischen den ursprünglichen Karten und den verbleibenden Karten im Deck.
-    #
-    #     Returns:
-    #         dict: Ein Dictionary mit den fehlenden Karten und deren Anzahl.
-    #     """
-    #     missing_cards = {}
-    #     for card, original_count in self.original_card_frequencies.items():
-    #         current_count = self.card_frequencies.get(card, 0)
-    #         if original_count > current_count:
-    #             missing_cards[card] = original_count - current_count
-    #     return missing_cards
 
     def get_available_cards(self):
         """

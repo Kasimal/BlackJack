@@ -1,5 +1,5 @@
 from Models.Deck import Deck
-from application.db import DatabaseManager
+from Application.db import DatabaseManager
 
 class Hands:
     def __init__(self, deck, db_manager):
