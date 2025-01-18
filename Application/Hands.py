@@ -18,9 +18,9 @@ class Hands:
         Generiert und speichert alle möglichen Hände mit einem maximalen minimum_value von 21.
         Die Hände werden sortiert generiert und gespeichert.
         """
-        self._generate_hands_recursive([])
+        self.generate_hands_recursive([])
 
-    def _generate_hands_recursive(self, current_hand, start_card=1):
+    def generate_hands_recursive(self, current_hand, start_card=1):
         """
         Rekursive Funktion zur Generierung von Händen in sortierter Reihenfolge.
 
@@ -59,7 +59,7 @@ class Hands:
                 next_hand = current_hand + [card]  # Füge die Karte zur aktuellen Hand hinzu
                 if self.deck.original_card_frequencies[card] - next_hand.count(card) >= 0:
                     print(next_hand)
-                    self._generate_hands_recursive(next_hand, start_card=card)
+                    self.generate_hands_recursive(next_hand, start_card=card)
 
 
 

@@ -51,11 +51,13 @@ class DatabaseManager:
             hand (list): Die aktuelle Hand als Liste der Kartenzahlen.
             total_value (int): Der Gesamtwert der Hand.
             minimum_value (int): Der Mindestwert der Hand.
+            is_blackjack (bool): Ob die Hand ein Blackjack ist.
             is_starthand (bool): Ob die Hand eine Starthand ist.
             is_busted (bool): Ob die Hand über 21 ist.
             can_double (bool): Ob die Hand verdoppelt werden kann.
             can_split (bool): Ob die Hand gesplittet werden kann.
             frequency (int): Die Häufigkeit der Hand.
+
         """
         card_counts = [hand.count(card) for card in range(1, 11)]  # Zähle jede Karte in der Hand
         hand_text = ",".join(map(str, hand))  # Wandelt die Hand in einen Textstring um
