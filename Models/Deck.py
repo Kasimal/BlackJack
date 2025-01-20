@@ -44,6 +44,39 @@ class Deck:
                 ace_count -= 1
         return total_value
 
+    def calculate_bust_probability(self, current_hand):
+        """
+        Berechnet die Wahrscheinlichkeit, dass eine Hand überboten wird.
+        Args:
+            current_hand (list[int]): Die aktuelle Hand.
+        Returns:
+            float: Wahrscheinlichkeit, dass die Hand überboten wird.
+        """
+        minimum_value = self.calculate_hand_value(current_hand, minimum=True)
+
+        if minimum_value <=11:
+            return 0.0  # Es ist nicht möglich zu überbieten
+        if minimum_value >=21:
+            return 1.0  # Jede Karte überbietet
+
+        # Berechne verbleibende Karten im Deck basierend auf `original_card_frequencies`
+        remaining_frequencies = {
+            card: self.original_card_frequencies.get(card, 0) - current_hand.count(card)
+            for card in self.original_card_frequencies
+        }
+
+        # Gesamte Anzahl verbleibender Karten
+        total_cards_left = sum(remaining_frequencies.values())
+        if total_cards_left <= 0:
+            return 0.0  # Keine Karten mehr im Deck, kein überbieten möglich
+
+        # Finde Karten, die die Hand über 21 bringen
+        bust_cards = [card for card in remaining_frequencies if minimum_value + card > 21]
+        bust_card_count = sum(remaining_frequencies.get(card, 0) for card in bust_cards)
+
+        # Berechne die Wahrscheinlichkeit
+        return bust_card_count / total_cards_left
+
     def calculate_hand_frequency(self, cards):
         """
         Berechnet die Häufigkeit einer Hand basierend auf den fehlenden Karten.
