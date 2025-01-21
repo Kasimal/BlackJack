@@ -8,6 +8,7 @@ def All_Hands_in_DB():
     db_manager = DatabaseManager(db_path)
     db_manager.drop_table()
     db_manager.create_table()
+    db_manager.inspect_table_columns("hands")
 
     # 2. Deck initialisieren
     deck_count = 1  # Anzahl der Decks

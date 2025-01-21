@@ -29,10 +29,23 @@ class DatabaseManager:
                     is_busted BOOLEAN,
                     can_double BOOLEAN,
                     can_split BOOLEAN,
+                    bust_chance FLOAT,
                     frequency INTEGER,
                     UNIQUE ({", ".join(self.card_columns)})
                 )
             ''')
+
+    def inspect_table_columns(self, table_name):
+        """Inspects the columns of a given table."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute(f"PRAGMA table_info({table_name});")
+            columns = cursor.fetchall()
+
+            print("Tabellenstruktur:")
+            for col in columns:
+                print(
+                    f"Spalten-ID: {col[0]}, Name: {col[1]}, Typ: {col[2]}, Not Null: {col[3]}, Default: {col[4]}, Primary Key: {col[5]}")
 
     def drop_table(self):
         """
@@ -44,7 +57,7 @@ class DatabaseManager:
                 DROP TABLE IF EXISTS hands;
             ''')
 
-    def save_hand(self, hand, total_value, minimum_value, is_blackjack, is_starthand, is_busted, can_double, can_split, frequency):
+    def save_hand(self, hand, total_value, minimum_value, is_blackjack, is_starthand, is_busted, can_double, can_split, bust_chance, frequency):
         """
         Speichert eine Hand in der Datenbank.
         Args:
@@ -56,6 +69,7 @@ class DatabaseManager:
             is_busted (bool): Ob die Hand über 21 ist.
             can_double (bool): Ob die Hand verdoppelt werden kann.
             can_split (bool): Ob die Hand gesplittet werden kann.
+            bust_chance (float): Wahrscheinlichkeit mit der nächsten Karte zu überbieten
             frequency (int): Die Häufigkeit der Hand.
 
         """
@@ -79,14 +93,17 @@ class DatabaseManager:
                     SET frequency = ?
                     WHERE {self._generate_where_clause(card_counts)}
                 ''', [new_frequency] + card_counts)
+
             else:
                 # Neue Hand einfügen
+                #print(f"Columns: {len(self.card_columns) + 10}, Values: {len(card_counts + [hand_text, total_value, minimum_value, is_blackjack, is_starthand, is_busted, can_double, can_split, bust_chance, frequency])}")
+                #print(f"Values: {card_counts + [hand_text, total_value, minimum_value, is_blackjack, is_starthand, is_busted, can_double, can_split, bust_chance, frequency]}")
                 cursor.execute(f'''
                     INSERT INTO hands ({", ".join(self.card_columns)}, hand_text, total_value, minimum_value,
-                                       is_blackjack, is_starthand, is_busted, can_double, can_split, frequency)
-                    VALUES ({", ".join("?" for _ in range(len(self.card_columns) + 8))})
+                                       is_blackjack, is_starthand, is_busted, can_double, can_split, bust_chance, frequency)
+                    VALUES ({", ".join("?" for _ in range(len(self.card_columns) + 10))})
                 ''', card_counts + [hand_text, total_value, minimum_value, is_blackjack, is_starthand, is_busted,
-                                    can_double, can_split, frequency])
+                                    can_double, can_split, bust_chance, frequency])
 
     def _generate_where_clause(self, card_counts):
         """

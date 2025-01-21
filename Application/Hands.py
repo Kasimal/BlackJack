@@ -48,9 +48,12 @@ class Hands:
         # Häufigkeit der aktuellen Hand berechnen
         frequency = self.deck.calculate_hand_frequency(current_hand)
 
+        # Wahrscheinlichkeit zu überbieten
+        bust_chance = self.deck.calculate_bust_probability(current_hand)
+
         # Hand speichern
         self.db_manager.save_hand(
-            current_hand, total_value, minimum_value, is_blackjack, is_starthand, is_busted, can_double, can_split, frequency
+            current_hand, total_value, minimum_value, is_blackjack, is_starthand, is_busted, can_double, can_split, bust_chance, frequency
         )
 
         # Erzeuge neue Hände, indem jede mögliche Karte zur aktuellen Hand hinzugefügt wird
