@@ -28,7 +28,7 @@ class DealerHands(Hands):
             "Blackjack": 0,
             "Busted": 0
         }
-        for total_value, frequency in self.db_manager.get_all_hands():
+        for total_value, frequency in self.db_manager.fetch_all_hands():
             if total_value > 21:
                 outcomes["Busted"] += frequency
             elif total_value == 21 and len([card for card in range(1, 11) if card == 1]) == 1:
