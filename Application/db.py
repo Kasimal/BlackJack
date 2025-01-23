@@ -11,9 +11,9 @@ class DatabaseManager:
         self.db_path = db_path
         self.card_columns = [f"c{i}" for i in range(1, 11)]
         self.connection = sqlite3.connect(self.db_path)
-        self.create_table()
+        self.create_table_hands()
 
-    def create_table(self):
+    def create_table_hands(self):
         """
         Erstellt die Tabelle für Blackjack-Hände, falls sie nicht bereits existiert.
         """
@@ -35,6 +35,29 @@ class DatabaseManager:
                 )
             ''')
 
+    def create_table_dealer_hands(self, start_card):
+        """
+        Erstellt eine Tabelle für Dealer-Hände basierend auf der Startkarte.
+
+        Args:
+            start_card (int): Die Startkarte (1 bis 10), für die die Tabelle erstellt wird.
+        """
+        if not (1 <= start_card <= 10):
+            raise ValueError("Startkarte muss zwischen 1 und 10 liegen.")
+
+        table_name = f"dealer_hands_{start_card}"  # Dynamischer Tabellenname
+        cursor = self.connection.cursor()
+        cursor.execute(f'''
+            CREATE TABLE IF NOT EXISTS {table_name} (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                hand_text TEXT NOT NULL,
+                result TEXT NOT NULL,
+                frequency INTEGER NOT NULL
+            )
+        ''')
+        self.connection.commit()
+        print(f"Tabelle '{table_name}' wurde erstellt.")
+
     def inspect_table_columns(self, table_name):
         """Inspects the columns of a given table."""
         with sqlite3.connect(self.db_path) as conn:
@@ -47,15 +70,19 @@ class DatabaseManager:
                 print(
                     f"Spalten-ID: {col[0]}, Name: {col[1]}, Typ: {col[2]}, Not Null: {col[3]}, Default: {col[4]}, Primary Key: {col[5]}")
 
-    def drop_table(self):
+    def drop_table(self, table_name):
         """
-        Löscht die Tabelle 'hands' aus der Datenbank, falls sie existiert.
+        Löscht die angegebene Tabelle aus der Datenbank, falls sie existiert.
+
+        Args:
+            table_name (str): Der Name der Tabelle, die gelöscht werden soll.
         """
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
-            cursor.execute('''
-                DROP TABLE IF EXISTS hands;
+            cursor.execute(f'''
+                DROP TABLE IF EXISTS {table_name};
             ''')
+            print(f"Tabelle '{table_name}' wurde gelöscht (falls sie existierte).")
 
     def save_hand(self, hand, total_value, minimum_value, is_blackjack, is_starthand, is_busted, can_double, can_split, bust_chance, frequency):
         """
@@ -119,6 +146,22 @@ class DatabaseManager:
         for i, count in enumerate(card_counts):
             conditions.append(f"c{i + 1} = ?")
         return " AND ".join(conditions)
+
+    def save_dealer_hand(self, hand, result):
+        """
+        Speichert die Dealer-Hand in der Datenbank.
+
+        Args:
+            hand (list): Die Karten in der Hand.
+            result (str): Das Ergebnis der Hand (z. B. '17', '18', ..., '21', 'blackjack', 'bust').
+        """
+        hand_text = ",".join(map(str, hand))  # Hand als Text speichern
+        cursor = self.connection.cursor()
+        cursor.execute(f'''
+            INSERT INTO dealer_hands (hand_text, result)
+            VALUES (?, ?)
+        ''', (hand_text, result))
+        self.connection.commit()
 
     def fetch_all_hands(self):
         """

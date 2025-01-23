@@ -6,8 +6,8 @@ def All_Hands_in_DB():
     # 1. Datenbank vorbereiten
     db_path = "Data/blackjack.db"
     db_manager = DatabaseManager(db_path)
-    db_manager.drop_table()
-    db_manager.create_table()
+    db_manager.drop_table("hands")
+    db_manager.create_table_hands()
     db_manager.inspect_table_columns("hands")
 
     # 2. Deck initialisieren
