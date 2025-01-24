@@ -13,14 +13,14 @@ class DatabaseManager:
         self.connection = sqlite3.connect(self.db_path)
         #self.create_table_hands()
 
-    def create_table_hands(self, table_name, dealer_hand=0):
+    def create_table_hands(self, table_name, dealer_hand=False):
         """
         Erstellt eine Tabelle für Blackjack-Hände oder Dealerhände mit Startkarte, falls sie nicht bereits existiert.
 
         Args:
             table_name (str): Basisname der Tabelle. Für Dealerhände wird die Startkartenzahl angehängt.
-            dealer_hand (int): Gibt an, ob es sich um eine normale Hände-Tabelle (0) oder
-                               eine Dealerhände-Tabelle (1 bis 10 für Startkarten) handelt.
+            dealer_hand (boolean): Gibt an, ob es sich um eine normale Hände-Tabelle (false) oder
+                               eine Dealerhände-Tabelle (True) handelt.
         """
         if dealer_hand == 0:
             full_table_name = table_name
@@ -174,6 +174,20 @@ class DatabaseManager:
                 VALUES (?, ?)
             ''', (hand_text, result))
             print(f"Dealer-Hand '{hand_text}' mit Ergebnis '{result}' in Tabelle '{table_name}' gespeichert.")
+
+    def print_hand_count(self, table_name):
+        """
+        Gibt die Anzahl der gespeicherten Hände in der angegebenen Tabelle aus.
+
+        Args:
+            table_name (str): Name der Tabelle, in der die Hände gespeichert sind.
+        """
+        print(f"Anzahl gespeicherter Hände in der Tabelle '{table_name}':")
+        with self.connection:
+            cursor = self.connection.cursor()
+            cursor.execute(f"SELECT COUNT(*) FROM {table_name}")  # Tabellennamen korrekt einfügen
+            count = cursor.fetchone()[0]
+            print(f"{count} Hände sind in der Datenbank gespeichert.")
 
     def fetch_all_hands(self):
         """

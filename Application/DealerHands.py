@@ -1,21 +1,32 @@
 from Hands import Hands
 
-class DealerHands(Hands):
+class DealerHands():
     def __init__(self, deck, db_manager):
         super().__init__(deck, db_manager)
         # Zusätzliche Eigenschaften für Dealer-spezifische Logik
         self.dealer_threshold = 17  # Mindestwert, ab dem der Dealer stoppt
+        self.deck = deck
+        self.db_manager = db_manager
 
-    def generate_dealer_hands(self):
+    def generate_dealer_hands(self, start_card=None):
         """
-        Generiere nur mögliche Dealer-Hände.
-        """
-        # Nur die 10 sichtbaren Karten für die Starthand verwenden
-        for card in self.deck.get_available_cards():
-            starting_hand = [card]
-            self.generate_dealer_hands_recursive(starting_hand)
+        Generiert mögliche Dealer-Hände, beginnend mit einer angegebenen Startkarte.
 
-    def generate_dealer_hands_recursive(self, current_hand):
+        Args:
+            start_card (int or None): Die Startkarte, mit der die Hände generiert werden sollen.
+                                      Wenn None, werden alle möglichen Startkarten (1 bis 10) verwendet.
+        """
+        # Prüfen, ob eine spezifische Startkarte übergeben wurde
+        if start_card:
+            starting_hand = [start_card]
+            self._generate_dealer_hands_recursive(starting_hand)
+        else:
+            # Wenn keine Startkarte angegeben ist, durchlaufe alle 10 sichtbaren Karten
+            for card in self.deck.get_available_cards():
+                starting_hand = [card]
+                self._generate_dealer_hands_recursive(starting_hand)
+
+    def _generate_dealer_hands_recursive(self, current_hand):
         """
         Rekursive Funktion zur Generierung und Analyse von Dealer-Händen.
 
@@ -48,7 +59,7 @@ class DealerHands(Hands):
             # Berechne die Häufigkeit der Karte basierend auf der verbleibenden Anzahl
             if current_hand.count(card) < self.deck.original_card_frequencies[card]:
                 next_hand = current_hand + [card]
-                self.generate_dealer_hands_recursive(next_hand)
+                self._generate_dealer_hands_recursive(next_hand)
 
     def calculate_outcomes(self):
         """
@@ -72,23 +83,23 @@ class DealerHands(Hands):
                 outcomes[str(total_value)] += frequency
         return outcomes
 
-    def analyze_dealer_hands(self, deck, start_card):
-        # Reduziere das Deck um die Startkarte
-        deck.remove_card(start_card)
+    def analyze_dealer_hands(self, start_card = None):
+        """Analysiert die Verteilungen für eine gegebene Startkarte."""
+        starthand = [start_card]  # Startkarte als Hand definieren
+        remaining_deck = self.deck.derive_deck_from_hand(start_card, starthand)  # Restdeck berechnen
 
-        # Initialisiere Verteilungen
         distributions = {
             "17": 0, "18": 0, "19": 0, "20": 0, "21": 0,
             "blackjack": 0, "bust": 0
         }
 
-        # Simuliere alle möglichen Folgekarten
         def recursive_analyze(current_hand, remaining_deck):
-            value = deck.calculate_value(current_hand)
-            if value > 21:
+            total_value = self.deck.calculate_value(current_hand)
+
+            if total_value > 21:
                 distributions["bust"] += 1
-            elif value >= 17:
-                distributions[str(value)] += 1
+            elif total_value >= 17:
+                distributions[str(total_value)] += 1
             else:
                 for card, count in remaining_deck.items():
                     if count > 0:
@@ -96,5 +107,22 @@ class DealerHands(Hands):
                         new_deck[card] -= 1
                         recursive_analyze(current_hand + [card], new_deck)
 
-        recursive_analyze([start_card], deck.card_frequencies.copy())
+        recursive_analyze(starthand, remaining_deck)
         return distributions
+
+        # Simuliere alle möglichen Folgekarten
+    # def recursive_analyze(self, current_hand, remaining_deck):
+    #     value = deck.calculate_value(current_hand)
+    #     if value > 21:
+    #         distributions["bust"] += 1
+    #     elif value >= 17:
+    #         distributions[str(value)] += 1
+    #     else:
+    #         for card, count in remaining_deck.items():
+    #             if count > 0:
+    #                 new_deck = remaining_deck.copy()
+    #                 new_deck[card] -= 1
+    #                 recursive_analyze(current_hand + [card], new_deck)
+    #
+    # recursive_analyze([start_card], deck.card_frequencies.copy())
+    # return distributions
