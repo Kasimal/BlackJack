@@ -31,7 +31,7 @@ def Dealer_Hands_in_DB():
     # 1. Datenbank vorbereiten
     db_path = "Data/blackjack.db"
     db_manager = DatabaseManager(db_path)
-    table_name = "Hands"
+    table_name = "Dealer_Hands"
     db_manager.drop_table(table_name)
     db_manager.create_table_hands(table_name, dealer_hand=True)
 
@@ -43,7 +43,7 @@ def Dealer_Hands_in_DB():
     hands_generator = DealerHands(deck, db_manager)
 
     # 4. Dealer-Hände generieren und speichern
-    hands_generator.generate_dealer_hands()
+    hands_generator.generate_dealer_hands(table_name, start_card=10)
 
     # 5. Dealer-Hände analysieren
     hands_generator.analyze_dealer_hands()

@@ -11,30 +11,21 @@ class DatabaseManager:
         self.db_path = db_path
         self.card_columns = [f"c{i}" for i in range(1, 11)]
         self.connection = sqlite3.connect(self.db_path)
-        #self.create_table_hands()
 
     def create_table_hands(self, table_name, dealer_hand=False):
         """
-        Erstellt eine Tabelle für Blackjack-Hände oder Dealerhände mit Startkarte, falls sie nicht bereits existiert.
+        Erstellt eine Tabelle für Blackjack-Hände oder Dealerhände, falls sie nicht bereits existiert.
 
         Args:
-            table_name (str): Basisname der Tabelle. Für Dealerhände wird die Startkartenzahl angehängt.
-            dealer_hand (boolean): Gibt an, ob es sich um eine normale Hände-Tabelle (false) oder
-                               eine Dealerhände-Tabelle (True) handelt.
+            table_name (str): Name der Tabelle.
+            dealer_hand (boolean): Gibt an, ob es sich um eine normale Hände-Tabelle (False) oder
+                                   eine Dealerhände-Tabelle (True) handelt.
         """
-        if dealer_hand == 0:
-            full_table_name = table_name
-        elif 1 <= dealer_hand <= 10:
-            full_table_name = f"{table_name}_{dealer_hand}"
-        else:
-            raise ValueError(
-                "Ungültiger Wert für 'dealer_hand'. Verwende 0 für normale Hände oder 1-10 für Dealerhände.")
-
         with self.connection as conn:
-            if dealer_hand == 0:
+            if not dealer_hand:
                 # Tabelle für normale Hände erstellen
                 conn.execute(f'''
-                    CREATE TABLE IF NOT EXISTS {full_table_name} (
+                    CREATE TABLE IF NOT EXISTS {table_name} (
                         {", ".join(f"{col} INTEGER" for col in self.card_columns)},
                         hand_text VARCHAR,
                         total_value INTEGER,
@@ -49,11 +40,11 @@ class DatabaseManager:
                         UNIQUE ({", ".join(self.card_columns)})
                     )
                 ''')
-                print(f"Normale Hände-Tabelle '{full_table_name}' wurde erstellt.")
+                print(f"Normale Hände-Tabelle '{table_name}' wurde erstellt.")
             else:
-                # Tabelle für Dealerhände mit Startkarte erstellen
+                # Tabelle für Dealerhände erstellen
                 conn.execute(f'''
-                    CREATE TABLE IF NOT EXISTS {full_table_name} (
+                    CREATE TABLE IF NOT EXISTS {table_name} (
                         start_card INTEGER,
                         total_17 FLOAT,
                         total_18 FLOAT,
@@ -61,11 +52,10 @@ class DatabaseManager:
                         total_20 FLOAT,
                         total_21 FLOAT,
                         blackjack FLOAT,
-                        bust FLOAT,
-                        UNIQUE (start_card)
+                        bust FLOAT
                     )
                 ''')
-                print(f"Dealerhände-Tabelle '{full_table_name}' mit Startkarte {dealer_hand} wurde erstellt.")
+                print(f"Dealerhände-Tabelle '{table_name}' wurde erstellt.")
 
     def inspect_table_columns(self, table_name):
         """Inspects the columns of a given table."""
@@ -156,24 +146,34 @@ class DatabaseManager:
             conditions.append(f"c{i + 1} = ?")
         return " AND ".join(conditions)
 
-    def save_dealer_hand(self, table_name, hand, result):
+    def save_dealer_hand(self, table_name, start_card, result):
         """
         Speichert die Dealer-Hand in der angegebenen Tabelle in der Datenbank.
+        Jede Kombination von start_card und result wird als neuer Eintrag gespeichert.
 
         Args:
             table_name (str): Der Name der Tabelle, in der die Hand gespeichert werden soll.
-            hand (list): Die Karten in der Hand.
-            result (str): Das Ergebnis der Hand (z. B. '17', '18', ..., '21', 'blackjack', 'bust').
+            start_card (int): Die Startkarte der Hand.
+            result (str): Das Ergebnis der Hand (z. B. 'total_17', 'total_18', ..., 'blackjack', 'bust').
         """
-        hand_text = ",".join(map(str, hand))  # Hand als Text speichern
-
         with self.connection as conn:
             cursor = conn.cursor()
+
+            # Überprüfen, ob das Ergebnis gültig ist
+            valid_results = ["total_17", "total_18", "total_19", "total_20", "total_21", "blackjack", "bust"]
+            if result not in valid_results:
+                raise ValueError(
+                    f"Ungültiges Ergebnis '{result}'. Erlaubte Ergebnisse sind: {', '.join(valid_results)}")
+
+            # Einfügen eines neuen Eintrags
             cursor.execute(f'''
-                INSERT INTO {table_name} (hand_text, result)
-                VALUES (?, ?)
-            ''', (hand_text, result))
-            print(f"Dealer-Hand '{hand_text}' mit Ergebnis '{result}' in Tabelle '{table_name}' gespeichert.")
+                INSERT INTO {table_name} (start_card, {result})
+                VALUES (?, 1)
+            ''', (start_card,))
+
+            print(
+                f"Neue Dealer-Hand mit Startkarte '{start_card}' und Ergebnis '{result}' in Tabelle '{table_name}' gespeichert.")
+
 
     def print_hand_count(self, table_name):
         """

@@ -1,14 +1,11 @@
-from Hands import Hands
-
-class DealerHands():
+class DealerHands:
     def __init__(self, deck, db_manager):
-        super().__init__(deck, db_manager)
-        # Zusätzliche Eigenschaften für Dealer-spezifische Logik
+        # Initialisierung der Dealer-spezifischen Eigenschaften
         self.dealer_threshold = 17  # Mindestwert, ab dem der Dealer stoppt
         self.deck = deck
         self.db_manager = db_manager
 
-    def generate_dealer_hands(self, start_card=None):
+    def generate_dealer_hands(self, table_name, start_card=None):
         """
         Generiert mögliche Dealer-Hände, beginnend mit einer angegebenen Startkarte.
 
@@ -19,14 +16,14 @@ class DealerHands():
         # Prüfen, ob eine spezifische Startkarte übergeben wurde
         if start_card:
             starting_hand = [start_card]
-            self._generate_dealer_hands_recursive(starting_hand)
+            self._generate_dealer_hands_recursive(table_name, starting_hand)
         else:
             # Wenn keine Startkarte angegeben ist, durchlaufe alle 10 sichtbaren Karten
             for card in self.deck.get_available_cards():
                 starting_hand = [card]
-                self._generate_dealer_hands_recursive(starting_hand)
+                self._generate_dealer_hands_recursive(table_name, starting_hand)
 
-    def _generate_dealer_hands_recursive(self, current_hand):
+    def _generate_dealer_hands_recursive(self, table_name, current_hand):
         """
         Rekursive Funktion zur Generierung und Analyse von Dealer-Händen.
 
@@ -38,20 +35,20 @@ class DealerHands():
 
         # Abbruchbedingung: Wenn der Mindestwert der Hand > 21 ist, ist die Hand gebustet
         if minimum_value > 21:
-            self.db_manager.save_dealer_hand(current_hand, "bust")
+            self.db_manager.save_dealer_hand(table_name, current_hand[0], "bust")
             return
 
         # Berechne den Gesamtwert der aktuellen Hand
         total_value = self.deck.calculate_hand_value(current_hand)
 
         # Abbruchbedingung: Wenn der Dealer 17 oder mehr hat, Hand speichern
-        if total_value >= 17:
+        if total_value >= self.dealer_threshold:
             if total_value == 21 and len(current_hand) == 2:
                 hand_result = "blackjack"
             else:
-                hand_result = str(total_value)
+                hand_result = f"total_{total_value}"  # Konvertiere Ergebnis in das korrekte Format
 
-            self.db_manager.save_dealer_hand(current_hand, hand_result)
+            self.db_manager.save_dealer_hand(table_name, current_hand[0], hand_result)
             return
 
         # Erzeuge neue Hände, indem jede mögliche Karte zur aktuellen Hand hinzugefügt wird
@@ -59,7 +56,7 @@ class DealerHands():
             # Berechne die Häufigkeit der Karte basierend auf der verbleibenden Anzahl
             if current_hand.count(card) < self.deck.original_card_frequencies[card]:
                 next_hand = current_hand + [card]
-                self._generate_dealer_hands_recursive(next_hand)
+                self._generate_dealer_hands_recursive(table_name, next_hand)
 
     def calculate_outcomes(self):
         """
