@@ -46,7 +46,7 @@ def Dealer_Hands_in_DB():
     hands_generator.generate_dealer_hands(table_name, start_card=10)
 
     # 5. Dealer-Hände analysieren
-    hands_generator.analyze_dealer_hands()
+    #hands_generator.analyze_dealer_hands()
 
     # 6. Statusbericht
     db_manager.print_hand_count(table_name)

@@ -7,56 +7,65 @@ class DealerHands:
 
     def generate_dealer_hands(self, table_name, start_card=None):
         """
-        Generiert mögliche Dealer-Hände, beginnend mit einer angegebenen Startkarte.
+        Generiert und speichert alle möglichen Dealerhände für eine bestimmte Startkarte.
 
         Args:
-            start_card (int or None): Die Startkarte, mit der die Hände generiert werden sollen.
-                                      Wenn None, werden alle möglichen Startkarten (1 bis 10) verwendet.
+            table_name (str): Name der Dealerhände-Tabelle.
+            start_card (int, optional): Die Startkarte des Dealers (z. B. 1 für Ass, 2 für 2 usw.).
+                                        Wenn None, werden alle Startkarten generiert.
         """
-        # Prüfen, ob eine spezifische Startkarte übergeben wurde
         if start_card:
-            starting_hand = [start_card]
-            self._generate_dealer_hands_recursive(table_name, starting_hand)
+            print(f"Generiere Dealerhände für Startkarte {start_card} in Tabelle '{table_name}'...")
+            self._generate_dealer_hands_recursive(table_name, [start_card], start_card)
         else:
             # Wenn keine Startkarte angegeben ist, durchlaufe alle 10 sichtbaren Karten
             for card in self.deck.get_available_cards():
-                starting_hand = [card]
-                self._generate_dealer_hands_recursive(table_name, starting_hand)
+                print(f"Generiere Dealerhände für Startkarte {card} in Tabelle '{table_name}'...")
+                self._generate_dealer_hands_recursive(table_name, [card], card)
 
-    def _generate_dealer_hands_recursive(self, table_name, current_hand):
+    def _generate_dealer_hands_recursive(self, table_name, current_hand, start_card):
         """
-        Rekursive Funktion zur Generierung und Analyse von Dealer-Händen.
+        Rekursive Methode zur Generierung aller möglichen Dealerhände.
 
         Args:
-            current_hand (list): Die aktuelle Dealer-Hand (Startkarte + mögliche weitere Karten).
+            table_name (str): Name der Dealerhände-Tabelle.
+            current_hand (list): Die aktuelle Hand (als Liste der Kartenwerte).
+            start_card (int): Die Startkarte des Dealers.
         """
-        # Berechne den Minimalwert der aktuellen Hand
-        minimum_value = self.deck.calculate_hand_value(current_hand, minimum=True)
-
-        # Abbruchbedingung: Wenn der Mindestwert der Hand > 21 ist, ist die Hand gebustet
-        if minimum_value > 21:
-            self.db_manager.save_dealer_hand(table_name, current_hand[0], "bust")
-            return
-
         # Berechne den Gesamtwert der aktuellen Hand
         total_value = self.deck.calculate_hand_value(current_hand)
 
-        # Abbruchbedingung: Wenn der Dealer 17 oder mehr hat, Hand speichern
-        if total_value >= self.dealer_threshold:
-            if total_value == 21 and len(current_hand) == 2:
-                hand_result = "blackjack"
-            else:
-                hand_result = f"total_{total_value}"  # Konvertiere Ergebnis in das korrekte Format
+        # Eigenschaften der Hand berechnen
+        is_blackjack = len(current_hand) == 2 and total_value == 21
+        is_busted = total_value > 21
 
-            self.db_manager.save_dealer_hand(table_name, current_hand[0], hand_result)
+        # Hand speichern, wenn sie gültig ist
+        if total_value <= 21 or is_busted:  # Nur speichern, wenn Hand gültig
+            self.db_manager.save_hand(
+                table_name=table_name,
+                hand=current_hand,
+                start_card=start_card,
+                total_value=total_value,
+                minimum_value=None,  # Bei Dealerhänden bleibt dies leer
+                is_blackjack=is_blackjack,
+                is_starthand=False,  # Dealerhände sind keine Starthände
+                is_busted=is_busted,
+                can_double=False,  # Dealerhände können nie verdoppeln
+                can_split=False,  # Dealerhände können nie splitten
+                bust_chance=0,  # Für Dealerhände optional
+                frequency=None  # Wird später berechnet
+            )
+
+        # Abbruchbedingung: Wenn total_value >= 17, endet die Hand (Dealer zieht nicht mehr)
+        if total_value >= 17:
             return
 
-        # Erzeuge neue Hände, indem jede mögliche Karte zur aktuellen Hand hinzugefügt wird
-        for card in range(1, 11):  # Ass (1) bis 10
-            # Berechne die Häufigkeit der Karte basierend auf der verbleibenden Anzahl
-            if current_hand.count(card) < self.deck.original_card_frequencies[card]:
-                next_hand = current_hand + [card]
-                self._generate_dealer_hands_recursive(table_name, next_hand)
+        # Generiere neue Hände, indem jede mögliche Karte hinzugefügt wird
+        for card in self.deck.get_available_cards():
+            # Füge die Karte zur aktuellen Hand hinzu
+            next_hand = current_hand + [card]
+            # Rekursiver Aufruf
+            self._generate_dealer_hands_recursive(table_name, next_hand, start_card)
 
     def calculate_outcomes(self):
         """
