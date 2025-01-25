@@ -98,9 +98,9 @@ class DatabaseManager:
 
     def save_hand(self, table_name, hand, start_card=None, total_value=None, minimum_value=None,
                   is_blackjack=False, is_starthand=False, is_busted=False,
-                  can_double=False, can_split=False, bust_chance=0, frequency=None):
+                  can_double=False, can_split=False, bust_chance=0, frequency=1):
         """
-        Speichert eine Hand in der angegebenen Tabelle.
+        Speichert eine Hand in der angegebenen Tabelle, mit Berücksichtigung der Reihenfolge bei Dealerhänden.
 
         Args:
             table_name (str): Name der Tabelle.
@@ -114,8 +114,9 @@ class DatabaseManager:
             can_double (bool, optional): Ob die Hand verdoppelt werden kann.
             can_split (bool, optional): Ob die Hand gesplittet werden kann.
             bust_chance (float, optional): Wahrscheinlichkeit, die Hand zu überbieten.
-            frequency (int, optional): Häufigkeit der Hand.
+            frequency (int): Häufigkeit der Hand.
         """
+
         # Häufigkeiten der Kartenwerte (1 bis 10) in der Hand berechnen
         card_frequencies = [hand.count(i) for i in range(1, 11)]  # Liste mit Häufigkeiten von Kartenwerten 1-10
 

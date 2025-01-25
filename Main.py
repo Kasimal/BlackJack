@@ -1,7 +1,7 @@
 from Models.Deck import Deck
-from Application.Hands import Hands
+from Application.hands import Hands
 from Application.db import DatabaseManager
-from Application.DealerHands import DealerHands
+from Application.dealer_hands import DealerHands
 
 def All_Hands_in_DB():
     # 1. Datenbank vorbereiten
