@@ -1,5 +1,6 @@
 from Models.Deck import Deck
-from Application.db import DatabaseManager
+from Utility.DB import DatabaseManager
+import Utility.Calculations as calc
 
 class Hands:
     def __init__(self, deck, db_manager):
@@ -29,14 +30,14 @@ class Hands:
             start_card (int): Die minimale Karte, die in dieser Iteration hinzugefügt werden darf.
         """
         # Berechne den Minimalwert der aktuellen Hand
-        minimum_value = self.deck.calculate_hand_value(current_hand, minimum=True)
+        minimum_value = calc.hand_value(current_hand, minimum=True)
 
         # Abbruchbedingung: Wenn der Mindestwert der Hand > 21 ist, keine weitere Berechnung
         if minimum_value > 21:
             return
 
         # Berechne den Gesamtwert der aktuellen Hand
-        total_value = self.deck.calculate_hand_value(current_hand)
+        total_value = calc.hand_value(current_hand)
 
         # Eigenschaften der Hand berechnen
         is_starthand = len(current_hand) == 2
@@ -46,10 +47,10 @@ class Hands:
         can_split = is_starthand and current_hand[0] == current_hand[1]
 
         # Häufigkeit der aktuellen Hand berechnen
-        frequency = self.deck.calculate_hand_frequency(current_hand)
+        frequency = calc.hand_frequency(current_hand)
 
         # Wahrscheinlichkeit zu überbieten
-        bust_chance = self.deck.calculate_bust_probability(current_hand)
+        bust_chance = calc.bust_probability(current_hand)
 
         # Hand speichern
         self.db_manager.save_hand(

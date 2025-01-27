@@ -1,7 +1,7 @@
 from Models.Deck import Deck
-from Application.hands import Hands
-from Application.db import DatabaseManager
-from Application.dealer_hands import DealerHands
+from Models.Hands import Hands
+from Models.Dealer_hands import DealerHands
+from Utility.DB import DatabaseManager
 
 def All_Hands_in_DB():
     # 1. Datenbank vorbereiten
@@ -13,8 +13,7 @@ def All_Hands_in_DB():
     db_manager.inspect_table_columns(table_name)
 
     # 2. Deck initialisieren
-    deck_count = 1  # Anzahl der Decks
-    deck = Deck(deck_count)  # Ein Deck
+    deck = Deck()  # Ein Deck
 
     # 3. Hands-Objekt erstellen
     hands_generator = Hands(deck,db_manager)
@@ -36,8 +35,7 @@ def Dealer_Hands_in_DB():
     db_manager.create_table_hands(table_name, dealer_hand=True)
 
     # 2. Deck initialisieren
-    deck_count = 1  # Anzahl der Decks
-    deck = Deck(deck_count)  # Ein Deck
+    deck = Deck()  # Ein Deck
 
     # 3. Dealer_Hands-Objekt erstellen
     hands_generator = DealerHands(deck, db_manager)

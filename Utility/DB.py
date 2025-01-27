@@ -1,7 +1,6 @@
 import sqlite3
 from Models.Deck import Deck
 
-
 class DatabaseManager:
     def __init__(self, db_path="Data/Blackjack.db"):
         """
@@ -252,7 +251,7 @@ class DatabaseManager:
             count = cursor.fetchone()[0]
             print(f"{count} Hände sind in der Datenbank gespeichert.")
 
-    def fetch_all_hands(self):
+    def fetch_all_hands(self, table_name):
         """
         Ruft alle gespeicherten Hände aus der Datenbank ab.
 
@@ -261,7 +260,7 @@ class DatabaseManager:
         """
         with self.connection as conn:
             cursor = conn.cursor()
-            cursor.execute('SELECT * FROM hands')
+            cursor.execute(f"SELECT * FROM {table_name}")
             return cursor.fetchall()
 
     def close(self):

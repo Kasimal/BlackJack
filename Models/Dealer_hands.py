@@ -1,4 +1,4 @@
-from Application.calculations import calculate_hand_frequency_with_order
+import Utility.Calculations as calc
 
 
 class DealerHands:
@@ -43,14 +43,14 @@ class DealerHands:
             original_frequencies (dict): Originale Kartenhäufigkeiten im Deck (z. B. {1: 4, 2: 4, ..., 10: 16}).
         """
         # Berechne den Gesamtwert der aktuellen Hand
-        total_value = self.deck.calculate_hand_value(current_hand)
+        total_value = self.deck.hand_value(current_hand)
 
         # Eigenschaften der Hand berechnen
         is_blackjack = len(current_hand) == 2 and total_value == 21
         is_busted = total_value > 21
 
         # Berechne die Häufigkeit der Hand mit Berücksichtigung der Reihenfolge
-        frequency = calculate_hand_frequency_with_order(current_hand, original_frequencies)
+        frequency = calc.hand_frequency_with_order(current_hand, original_frequencies, cards_to_ignore = 1)
 
         # Hand speichern
         self.db_manager.save_hand(
