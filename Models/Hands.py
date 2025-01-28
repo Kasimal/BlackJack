@@ -52,9 +52,21 @@ class Hands:
         # Wahrscheinlichkeit zu überbieten
         bust_chance = calc.bust_probability(current_hand)
 
-        # Hand speichern
-        self.db_manager.save_hand("hands", "player", current_hand, total_value, minimum_value,
-                                  is_blackjack, is_starthand, is_busted, can_double, can_split, bust_chance, frequency)
+        self.db_manager.save_hand(
+            table_name="hands",  # Tabelle bleibt gleich
+            hands_type="player",  # Spielerhände werden gespeichert
+            hand=current_hand,
+            start_card=None,  # keine Startkarte
+            total_value=total_value,
+            minimum_value=minimum_value,
+            is_blackjack=is_blackjack,
+            is_starthand=is_starthand,
+            is_busted=is_busted,
+            can_double=can_double,  # Spieler können verdoppeln
+            can_split=can_split,  # Spieler können splitten
+            bust_chance=bust_chance,
+            frequency=frequency
+        )
 
         # Erzeuge neue Hände, indem jede mögliche Karte zur aktuellen Hand hinzugefügt wird
         for card in self.deck.get_available_cards():

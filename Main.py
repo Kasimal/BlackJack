@@ -3,6 +3,7 @@ from Models.Hands import Hands
 from Models.Dealer_hands import DealerHands
 from Utility.DB import DatabaseManager
 
+
 def All_Hands_in_DB():
     # 1. Datenbank vorbereiten
     db_path = "Data/blackjack.db"
@@ -51,6 +52,9 @@ def Dealer_Hands_in_DB():
 
 
 if __name__ == "__main__":
-    #All_Hands_in_DB()
-    Dealer_Hands_in_DB()
+    All_Hands_in_DB()
+    #Dealer_Hands_in_DB()
+
+
+
 

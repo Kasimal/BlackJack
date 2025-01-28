@@ -75,7 +75,7 @@ class DatabaseManager:
             ''')
             print(f"Tabelle '{table_name}' wurde gelöscht (falls sie existierte).")
 
-    def save_hand(self, table_name, hands_type, hand, start_card=None, total_value=None, minimum_value=None,
+    def save_hand(self, table_name, hands_type, hand, start_card=None, total_value=0, minimum_value=0,
                   is_blackjack=False, is_starthand=False, is_busted=False,
                   can_double=False, can_split=False, bust_chance=0, frequency=1):
         """
@@ -102,13 +102,17 @@ class DatabaseManager:
         # Erstelle Handtext
         hand_text = ",".join(map(str, hand))
 
+        # Setze `start_card` korrekt
+        if hands_type == "player":
+            start_card = None  # Spielerhände haben keine `start_card`
+
         # Spalten und Werte vorbereiten
-        columns = ["hand_type"] + [f"c{i}" for i in range(1, 11)]  # hand_type und c1 bis c10
-        values = [hands_type] + card_frequencies  # hand_type und Kartenhäufigkeiten als Werte
-        columns += ["hand_text", "start_card", "total_value", "minimum_value",
+        columns = ["hand_type", "start_card"] + [f"c{i}" for i in range(1, 11)]  # hand_type und c1 bis c10
+        values = [hands_type, start_card] + card_frequencies  # hand_type und Kartenhäufigkeiten als Werte
+        columns += ["hand_text", "total_value", "minimum_value",
                     "is_blackjack", "is_starthand", "is_busted",
                     "can_double", "can_split", "bust_chance", "frequency"]
-        values += [hand_text, start_card, total_value, minimum_value,
+        values += [hand_text, total_value, minimum_value,
                    is_blackjack, is_starthand, is_busted,
                    can_double, can_split, bust_chance, frequency]
 
@@ -124,98 +128,6 @@ class DatabaseManager:
             print(f"Hand {hand_text} erfolgreich in '{table_name}' gespeichert.")
         except sqlite3.IntegrityError as e:
             print(f"Fehler beim Speichern der Hand {hand_text}: {e}")
-
-    # def save_hand(self, hand, total_value, minimum_value, is_blackjack, is_starthand, is_busted, can_double, can_split, bust_chance, frequency):
-    #     """
-    #     Speichert eine Hand in der Datenbank.
-    #     Args:
-    #         hand (list): Die aktuelle Hand als Liste der Kartenzahlen.
-    #         total_value (int): Der Gesamtwert der Hand.
-    #         minimum_value (int): Der Mindestwert der Hand.
-    #         is_blackjack (bool): Ob die Hand ein Blackjack ist.
-    #         is_starthand (bool): Ob die Hand eine Starthand ist.
-    #         is_busted (bool): Ob die Hand über 21 ist.
-    #         can_double (bool): Ob die Hand verdoppelt werden kann.
-    #         can_split (bool): Ob die Hand gesplittet werden kann.
-    #         bust_chance (float): Wahrscheinlichkeit mit der nächsten Karte zu überbieten
-    #         frequency (int): Die Häufigkeit der Hand.
-    #
-    #     """
-    #     card_counts = [hand.count(card) for card in range(1, 11)]  # Zähle jede Karte in der Hand
-    #     hand_text = ",".join(map(str, hand))  # Wandelt die Hand in einen Textstring um
-    #
-    #     with self.connection as conn:
-    #         cursor = conn.cursor()
-    #
-    #         # Prüfen, ob die Hand bereits existiert
-    #         cursor.execute(f'''
-    #             SELECT frequency FROM hands WHERE {self._generate_where_clause(card_counts)}
-    #         ''', card_counts)
-    #         result = cursor.fetchone()
-    #
-    #         if result:
-    #             # Häufigkeit aktualisieren, wenn Hand existiert
-    #             new_frequency = result[0] + frequency
-    #             cursor.execute(f'''
-    #                 UPDATE hands
-    #                 SET frequency = ?
-    #                 WHERE {self._generate_where_clause(card_counts)}
-    #             ''', [new_frequency] + card_counts)
-    #
-    #         else:
-    #             # Neue Hand einfügen
-    #             #print(f"Columns: {len(self.card_columns) + 10}, Values: {len(card_counts + [hand_text, total_value, minimum_value, is_blackjack, is_starthand, is_busted, can_double, can_split, bust_chance, frequency])}")
-    #             #print(f"Values: {card_counts + [hand_text, total_value, minimum_value, is_blackjack, is_starthand, is_busted, can_double, can_split, bust_chance, frequency]}")
-    #             cursor.execute(f'''
-    #                 INSERT INTO hands ({", ".join(self.card_columns)}, hand_text, total_value, minimum_value,
-    #                                    is_blackjack, is_starthand, is_busted, can_double, can_split, bust_chance, frequency)
-    #                 VALUES ({", ".join("?" for _ in range(len(self.card_columns) + 10))})
-    #             ''', card_counts + [hand_text, total_value, minimum_value, is_blackjack, is_starthand, is_busted,
-    #                                 can_double, can_split, bust_chance, frequency])
-    #
-    # def _generate_where_clause(self, card_counts):
-    #     """
-    #     Generiert eine WHERE-Bedingung für die Kartenzählungen.
-    #
-    #     Args:
-    #         card_counts (list): Eine Liste mit der Anzahl der Karten (1 bis 10).
-    #
-    #     Returns:
-    #         str: Die generierte WHERE-Bedingung.
-    #     """
-    #     conditions = []
-    #     for i, count in enumerate(card_counts):
-    #         conditions.append(f"c{i + 1} = ?")
-    #     return " AND ".join(conditions)
-    #
-    # def save_dealer_hand(self, table_name, start_card, result):
-    #     """
-    #     Speichert die Dealer-Hand in der angegebenen Tabelle in der Datenbank.
-    #     Jede Kombination von start_card und result wird als neuer Eintrag gespeichert.
-    #
-    #     Args:
-    #         table_name (str): Der Name der Tabelle, in der die Hand gespeichert werden soll.
-    #         start_card (int): Die Startkarte der Hand.
-    #         result (str): Das Ergebnis der Hand (z. B. 'total_17', 'total_18', ..., 'blackjack', 'bust').
-    #     """
-    #     with self.connection as conn:
-    #         cursor = conn.cursor()
-    #
-    #         # Überprüfen, ob das Ergebnis gültig ist
-    #         valid_results = ["total_17", "total_18", "total_19", "total_20", "total_21", "blackjack", "bust"]
-    #         if result not in valid_results:
-    #             raise ValueError(
-    #                 f"Ungültiges Ergebnis '{result}'. Erlaubte Ergebnisse sind: {', '.join(valid_results)}")
-    #
-    #         # Einfügen eines neuen Eintrags
-    #         cursor.execute(f'''
-    #             INSERT INTO {table_name} (start_card, {result})
-    #             VALUES (?, 1)
-    #         ''', (start_card,))
-    #
-    #         print(
-    #             f"Neue Dealer-Hand mit Startkarte '{start_card}' und Ergebnis '{result}' in Tabelle '{table_name}' gespeichert.")
-
 
     def print_hand_count(self, table_name):
         """
