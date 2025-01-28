@@ -14,56 +14,36 @@ class DatabaseManager:
         self.card_columns = [f"c{card}" for card in self.deck.get_available_cards()]
         self.connection = sqlite3.connect(self.db_path)
 
-    def create_table_hands(self, table_name, dealer_hand=False):
+    def create_table_hands(self, table_name):
         """
-        Erstellt eine Tabelle für Blackjack-Hände oder Dealerhände, falls sie nicht bereits existiert.
+        Erstellt eine einheitliche Tabelle für Blackjack-Hände, die sowohl Spieler- als auch Dealerhände abdecken kann.
 
         Args:
             table_name (str): Name der Tabelle.
-            dealer_hand (bool): Gibt an, ob es sich um eine normale Hände-Tabelle (False) oder
-                                eine Dealerhände-Tabelle (True) handelt.
         """
         with self.connection as conn:
             cursor = conn.cursor()
 
-            if not dealer_hand:
-                # SQL für normale Hände
-                sql = f'''
-                    CREATE TABLE IF NOT EXISTS {table_name} (
-                        {", ".join(f"{col} INTEGER" for col in self.card_columns)},
-                        hand_text VARCHAR UNIQUE,
-                        total_value INTEGER,
-                        minimum_value INTEGER,
-                        is_blackjack BOOLEAN,
-                        is_starthand BOOLEAN,
-                        is_busted BOOLEAN,
-                        can_double BOOLEAN,
-                        can_split BOOLEAN,
-                        bust_chance FLOAT,
-                        frequency INTEGER
-                    )
-                '''
-                print(f"Normale Hände-Tabelle '{table_name}' wird erstellt.")
-            else:
-                # SQL für Dealerhände
-                sql = f'''
-                    CREATE TABLE IF NOT EXISTS {table_name} (
-                        start_card INTEGER,             -- Startkarte des Dealers
-                        {", ".join(f"{col} INTEGER" for col in self.card_columns)},
-                        hand_text VARCHAR,
-                        total_value INTEGER,
-                        minimum_value INTEGER,          -- bleibt leer
-                        is_blackjack BOOLEAN,
-                        is_starthand BOOLEAN,
-                        is_busted BOOLEAN,
-                        can_double BOOLEAN DEFAULT 0,  -- immer False
-                        can_split BOOLEAN DEFAULT 0,   -- immer False
-                        bust_chance FLOAT,             -- kann 0 oder leer sein
-                        frequency INTEGER,             -- wird später befüllt
-                        UNIQUE (start_card, hand_text) -- Eindeutigkeit nach Startkarte und Handtext
-                    )
-                '''
-                print(f"Dealerhände-Tabelle '{table_name}' wird erstellt.")
+            # SQL für einheitliche Hände-Tabelle
+            sql = f'''
+                CREATE TABLE IF NOT EXISTS {table_name} (
+                    hand_id INTEGER PRIMARY KEY AUTOINCREMENT, -- Eindeutige ID
+                    hand_type TEXT NOT NULL,                  -- Typ der Hand: 'player' oder 'dealer'
+                    start_card INTEGER,                       -- Startkarte der Hand
+                    {", ".join(f"{col} INTEGER" for col in self.card_columns)},
+                    hand_text VARCHAR UNIQUE,                 -- Textuelle Darstellung der Hand
+                    total_value INTEGER,                      -- Gesamtwert der Hand
+                    minimum_value INTEGER,                    -- Minimalwert der Hand
+                    is_blackjack BOOLEAN,                     -- Ob die Hand ein Blackjack ist
+                    is_starthand BOOLEAN,                     -- Ob die Hand eine Starthand ist
+                    is_busted BOOLEAN,                        -- Ob die Hand über 21 liegt
+                    can_double BOOLEAN DEFAULT 0,             -- Ob die Hand verdoppelt werden kann (immer False für Dealer)
+                    can_split BOOLEAN DEFAULT 0,              -- Ob die Hand gesplittet werden kann (immer False für Dealer)
+                    bust_chance FLOAT,                        -- Wahrscheinlichkeit, die Hand zu überbieten
+                    frequency INTEGER                          -- Häufigkeit der Hand
+                )
+            '''
+            print(f"Einheitliche Hände-Tabelle '{table_name}' wird erstellt.")
 
             # Ausführung der SQL-Anweisung
             cursor.execute(sql)
@@ -95,14 +75,15 @@ class DatabaseManager:
             ''')
             print(f"Tabelle '{table_name}' wurde gelöscht (falls sie existierte).")
 
-    def save_hand(self, table_name, hand, start_card=None, total_value=None, minimum_value=None,
+    def save_hand(self, table_name, hands_type, hand, start_card=None, total_value=None, minimum_value=None,
                   is_blackjack=False, is_starthand=False, is_busted=False,
                   can_double=False, can_split=False, bust_chance=0, frequency=1):
         """
-        Speichert eine Hand in der angegebenen Tabelle, mit Berücksichtigung der Reihenfolge bei Dealerhänden.
+        Speichert eine Hand in der angegebenen Tabelle.
 
         Args:
             table_name (str): Name der Tabelle.
+            hands_type (str): 'player' oder 'dealer'.
             hand (list): Die Karten in der Hand.
             start_card (int, optional): Die Startkarte des Dealers (nur für Dealerhände).
             total_value (int, optional): Der Gesamtwert der Hand.
@@ -115,7 +96,6 @@ class DatabaseManager:
             bust_chance (float, optional): Wahrscheinlichkeit, die Hand zu überbieten.
             frequency (int): Häufigkeit der Hand.
         """
-
         # Häufigkeiten der Kartenwerte (1 bis 10) in der Hand berechnen
         card_frequencies = [hand.count(i) for i in range(1, 11)]  # Liste mit Häufigkeiten von Kartenwerten 1-10
 
@@ -123,8 +103,8 @@ class DatabaseManager:
         hand_text = ",".join(map(str, hand))
 
         # Spalten und Werte vorbereiten
-        columns = [f"c{i}" for i in range(1, 11)]  # c1 bis c10 für die Kartenhäufigkeiten
-        values = card_frequencies  # Häufigkeiten als Werte übernehmen
+        columns = ["hand_type"] + [f"c{i}" for i in range(1, 11)]  # hand_type und c1 bis c10
+        values = [hands_type] + card_frequencies  # hand_type und Kartenhäufigkeiten als Werte
         columns += ["hand_text", "start_card", "total_value", "minimum_value",
                     "is_blackjack", "is_starthand", "is_busted",
                     "can_double", "can_split", "bust_chance", "frequency"]

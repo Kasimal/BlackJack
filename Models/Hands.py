@@ -53,9 +53,8 @@ class Hands:
         bust_chance = calc.bust_probability(current_hand)
 
         # Hand speichern
-        self.db_manager.save_hand(
-            current_hand, total_value, minimum_value, is_blackjack, is_starthand, is_busted, can_double, can_split, bust_chance, frequency
-        )
+        self.db_manager.save_hand("hands", "player", current_hand, total_value, minimum_value,
+                                  is_blackjack, is_starthand, is_busted, can_double, can_split, bust_chance, frequency)
 
         # Erzeuge neue Hände, indem jede mögliche Karte zur aktuellen Hand hinzugefügt wird
         for card in self.deck.get_available_cards():

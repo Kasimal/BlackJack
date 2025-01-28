@@ -32,7 +32,7 @@ def Dealer_Hands_in_DB():
     db_manager = DatabaseManager(db_path)
     table_name = "Dealer_Hands"
     db_manager.drop_table(table_name)
-    db_manager.create_table_hands(table_name, dealer_hand=True)
+    db_manager.create_table_hands(table_name)
 
     # 2. Deck initialisieren
     deck = Deck()  # Ein Deck
@@ -51,5 +51,6 @@ def Dealer_Hands_in_DB():
 
 
 if __name__ == "__main__":
+    #All_Hands_in_DB()
     Dealer_Hands_in_DB()
 

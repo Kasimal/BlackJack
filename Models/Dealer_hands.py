@@ -43,7 +43,7 @@ class DealerHands:
             original_frequencies (dict): Originale Kartenhäufigkeiten im Deck (z. B. {1: 4, 2: 4, ..., 10: 16}).
         """
         # Berechne den Gesamtwert der aktuellen Hand
-        total_value = self.deck.hand_value(current_hand)
+        total_value = calc.hand_value(current_hand)
 
         # Eigenschaften der Hand berechnen
         is_blackjack = len(current_hand) == 2 and total_value == 21
@@ -55,12 +55,13 @@ class DealerHands:
         # Hand speichern
         self.db_manager.save_hand(
             table_name=table_name,
+            hands_type="dealer",
             hand=current_hand,
-            start_card=start_card,  # Startkarte wird weiterhin gespeichert
+            start_card=start_card,  # Startkarte wird gespeichert
             total_value=total_value,
             minimum_value=None,  # Bei Dealerhänden bleibt dies leer
             is_blackjack=is_blackjack,
-            is_starthand=False,  # Dealerhände sind keine Starthände
+            is_starthand=False,  # Bei Dealerhänden spielt Starthand keine Rolle
             is_busted=is_busted,
             can_double=False,  # Dealerhände können nie verdoppeln
             can_split=False,  # Dealerhände können nie splitten
