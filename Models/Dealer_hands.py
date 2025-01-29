@@ -52,25 +52,23 @@ class DealerHands:
         # Berechne die Häufigkeit der Hand mit Berücksichtigung der Reihenfolge
         frequency = calc.hand_frequency_with_order(current_hand, original_frequencies, cards_to_ignore = 1)
 
-        # Hand speichern
-        self.db_manager.save_hand(
-            table_name=table_name,
-            hands_type="dealer",
-            hand=current_hand,
-            start_card=start_card,  # Startkarte wird gespeichert
-            total_value=total_value,
-            minimum_value=None,  # Bei Dealerhänden bleibt dies leer
-            is_blackjack=is_blackjack,
-            is_starthand=False,  # Bei Dealerhänden spielt Starthand keine Rolle
-            is_busted=is_busted,
-            can_double=False,  # Dealerhände können nie verdoppeln
-            can_split=False,  # Dealerhände können nie splitten
-            bust_chance=0,  # Für Dealerhände optional
-            frequency=frequency
-        )
-
-        # Abbruchbedingung: Wenn der Dealerhände-Wert >= 17 ist
+        # Abbruchbedingung: Wenn der Dealerhände-Wert >= 17 ist Hand speichern und dann nicht weiter
         if total_value >= 17:
+            self.db_manager.save_hand(
+                table_name=table_name,
+                hands_type="dealer",
+                hand=current_hand,
+                start_card=start_card,  # Startkarte wird gespeichert
+                total_value=total_value,
+                minimum_value=None,  # Bei Dealerhänden bleibt dies leer
+                is_blackjack=is_blackjack,
+                is_starthand=False,  # Bei Dealerhänden spielt Starthand keine Rolle
+                is_busted=is_busted,
+                can_double=False,  # Dealerhände können nie verdoppeln
+                can_split=False,  # Dealerhände können nie splitten
+                bust_chance=0,  # Für Dealerhände optional
+                frequency=frequency
+            )
             return
 
         # Generiere neue Hände, indem jede mögliche Karte hinzugefügt wird

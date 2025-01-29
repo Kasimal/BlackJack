@@ -42,18 +42,26 @@ def Dealer_Hands_in_DB():
     hands_generator = DealerHands(deck, db_manager)
 
     # 4. Dealer-Hände generieren und speichern
-    hands_generator.generate_dealer_hands(table_name, start_card=10)
-
-    # 5. Dealer-Hände analysieren
-    #hands_generator.analyze_dealer_hands()
+    hands_generator.generate_dealer_hands(table_name)
 
     # 6. Statusbericht
     db_manager.print_hand_count(table_name)
 
+    # 7. Dealerhände auswerten
+    stats = db_manager.get_dealer_hand_statistics()
+    for row in stats:
+        print(row)  # (start_card, count_17, count_18, count_19, count_20, count_21, count_blackjack, count_busted)
+
+def Dealer_Hands_statistics_from_DB():
+    db_path = "Data/blackjack.db"
+    db_manager = DatabaseManager(db_path)
+    db_manager.update_dealer_hand_statistics()
+
 
 if __name__ == "__main__":
-    All_Hands_in_DB()
-    #Dealer_Hands_in_DB()
+    #All_Hands_in_DB()
+    Dealer_Hands_in_DB()
+    Dealer_Hands_statistics_from_DB()
 
 
 

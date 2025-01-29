@@ -44,6 +44,10 @@ class Deck:
         """
         return [card for card, freq in self.original_card_frequencies.items() if freq > 0]
 
+    def total_cards(self):
+        """Berechnet die Gesamtzahl der Karten im Deck."""
+        return sum(self.card_frequencies.values())
+
     def get_missing_cards(self):
         """
         Berechnet die Differenz zwischen dem ursprünglichen Deck und dem aktuellen Zustand des Decks.

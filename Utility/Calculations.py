@@ -130,3 +130,40 @@ def hand_value(hand, minimum=False):
             total_value += 10
             ace_count -= 1
     return total_value
+
+def hand_probability(hand, deck, start_cards=None):
+    """
+    Berechnet die Wahrscheinlichkeit einer bestimmten Hand basierend auf der Häufigkeit der Karten im Deck,
+    wobei mögliche Startkarten ausgeschlossen werden.
+
+    Args:
+        hand (list): Eine Liste von Karten in der Hand (z.B. [10, 2, 1, 1, 1, 1, 5]).
+        deck (Deck): Eine Deck-Instanz, die die Häufigkeit jeder Karte enthält.
+        start_cards (list, optional): Eine Liste von Karten, die als Startkarten genutzt werden und aus der Berechnung ausgeschlossen werden sollen.
+
+    Returns:
+        float: Die Wahrscheinlichkeit, die gegebene Hand zu ziehen, unter Berücksichtigung der Deckzusammensetzung.
+    """
+    probability = 1.0
+    deck_copy = deck.copy()  # Hole eine Kopie des Decks
+    total_cards = deck.total_cards()  # Gesamtzahl der Karten im Deck
+
+    # Wenn Startkarten angegeben sind, reduzieren wir die Anzahl dieser Karten im Deck
+    if start_cards:
+        for card in start_cards:
+            try:
+                deck_copy.remove_card(card)  # Entferne die Karte aus dem Deck
+                total_cards -= 1  # Reduziere die Gesamtzahl der Karten
+            except ValueError:
+                pass  # Falls die Karte nicht im Deck ist, überspringe sie einfach
+
+    # Berechnung der Wahrscheinlichkeit, die Hand zu ziehen
+    for card in hand:
+        if deck_copy.card_frequencies[card] > 0:
+            probability *= deck_copy.card_frequencies[card] / total_cards
+            deck_copy.remove_card(card)  # Entferne die gezogene Karte
+            total_cards -= 1  # Reduziere die Gesamtzahl der Karten
+        else:
+            return 0  # Wenn eine Karte nicht mehr im Deck ist, ist die Wahrscheinlichkeit 0
+
+    return probability

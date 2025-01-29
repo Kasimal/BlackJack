@@ -13,6 +13,7 @@ class DatabaseManager:
         self.db_path = db_path
         self.card_columns = [f"c{card}" for card in self.deck.get_available_cards()]
         self.connection = sqlite3.connect(self.db_path)
+        self._create_stats_table()
 
     def create_table_hands(self, table_name):
         """
@@ -48,6 +49,76 @@ class DatabaseManager:
             # Ausführung der SQL-Anweisung
             cursor.execute(sql)
             print(f"Tabelle '{table_name}' wurde erfolgreich erstellt.")
+
+    def _create_stats_table(self):
+        """Erstellt die Tabelle für die Dealerhand-Statistiken mit relativen Häufigkeiten, falls sie nicht existiert."""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS dealer_hand_stats (
+                start_card TEXT PRIMARY KEY,
+                count_17 REAL DEFAULT 0,
+                count_18 REAL DEFAULT 0,
+                count_19 REAL DEFAULT 0,
+                count_20 REAL DEFAULT 0,
+                count_21 REAL DEFAULT 0,
+                count_blackjack REAL DEFAULT 0,
+                count_busted REAL DEFAULT 0
+            )
+        """)
+        conn.commit()
+        conn.close()
+
+    def update_dealer_hand_statistics(self):
+        """Berechnet die relativen Häufigkeiten der Dealerhände nach Startkarte."""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        # Basis-Query zur Berechnung der absoluten Häufigkeiten
+        query = "SELECT start_card,\n"
+
+        for value in range(17, 21):
+            query += f"    SUM(CASE WHEN total_value = {value} THEN frequency ELSE 0 END) AS count_{value},\n"
+
+        query += """
+            SUM(CASE WHEN total_value = 21 AND NOT is_blackjack THEN frequency ELSE 0 END) AS count_21,
+            SUM(CASE WHEN is_blackjack THEN frequency ELSE 0 END) AS count_blackjack,
+            SUM(CASE WHEN is_busted THEN frequency ELSE 0 END) AS count_busted,
+            SUM(frequency) AS total_hands
+        FROM dealer_hands
+        GROUP BY start_card
+        ORDER BY start_card;
+        """
+
+        cursor.execute(query)
+        results = cursor.fetchall()
+
+        # Tabelle leeren, um alte Werte zu überschreiben
+        cursor.execute("DELETE FROM dealer_hand_stats")
+
+        # Ergebnisse mit relativen Häufigkeiten speichern
+        for row in results:
+            start_card, count_17, count_18, count_19, count_20, count_21, count_blackjack, count_busted, total_hands = row
+
+            # Berechnung der relativen Häufigkeiten (0 falls total_hands = 0)
+            relative_values = [
+                start_card,
+                count_17 / total_hands if total_hands else 0,
+                count_18 / total_hands if total_hands else 0,
+                count_19 / total_hands if total_hands else 0,
+                count_20 / total_hands if total_hands else 0,
+                count_21 / total_hands if total_hands else 0,
+                count_blackjack / total_hands if total_hands else 0,
+                count_busted / total_hands if total_hands else 0
+            ]
+
+            cursor.execute("""
+                INSERT INTO dealer_hand_stats (start_card, count_17, count_18, count_19, count_20, count_21, count_blackjack, count_busted)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, relative_values)
+
+        conn.commit()
+        conn.close()
 
     def inspect_table_columns(self, table_name):
         """Inspects the columns of a given table."""
@@ -142,6 +213,34 @@ class DatabaseManager:
             cursor.execute(f"SELECT COUNT(*) FROM {table_name}")  # Tabellennamen korrekt einfügen
             count = cursor.fetchone()[0]
             print(f"{count} Hände sind in der Datenbank gespeichert.")
+
+    def get_dealer_hand_statistics(self):
+        """Gibt eine Auswertung der Dealerhände nach Startkarte zurück."""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+
+        # Basis-Query
+        query = "SELECT start_card,\n"
+
+        # Dynamische Erstellung der Summen-Abfragen für 17 bis 20
+        for value in range(17, 21):
+            query += f"    SUM(CASE WHEN total_value = {value} AND NOT is_blackjack AND NOT is_busted THEN frequency ELSE 0 END) AS count_{value},\n"
+
+        # Ergänzung für 21, Blackjack und Busted
+        query += """
+            SUM(CASE WHEN total_value = 21 AND NOT is_blackjack AND NOT is_busted THEN frequency ELSE 0 END) AS count_21,
+            SUM(CASE WHEN is_blackjack THEN frequency ELSE 0 END) AS count_blackjack,
+            SUM(CASE WHEN is_busted THEN frequency ELSE 0 END) AS count_busted
+        FROM dealer_hands
+        GROUP BY start_card
+        ORDER BY start_card;
+        """
+
+        cursor.execute(query)
+        results = cursor.fetchall()
+        conn.close()
+
+        return results
 
     def fetch_all_hands(self, table_name):
         """
