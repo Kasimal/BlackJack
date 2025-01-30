@@ -226,7 +226,7 @@ class DatabaseManager:
 
         # Dynamische Erstellung der Summen-Abfragen für 17 bis 20
         for value in range(17, 21):
-            query += f"    SUM(CASE WHEN total_value = {value} AND NOT is_blackjack AND NOT is_busted THEN probality ELSE 0 END) AS count_{value},\n"
+            query += f"    SUM(CASE WHEN total_value = {value} AND NOT is_blackjack AND NOT is_busted THEN probability ELSE 0 END) AS count_{value},\n"
 
         # Ergänzung für 21, Blackjack und Busted
         query += """
