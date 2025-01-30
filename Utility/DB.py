@@ -28,7 +28,7 @@ class DatabaseManager:
             # SQL für einheitliche Hände-Tabelle
             sql = f'''
                 CREATE TABLE IF NOT EXISTS {table_name} (
-                    hand_id INTEGER PRIMARY KEY AUTOINCREMENT, -- Eindeutige ID
+                    hand_id INTEGER PRIMARY KEY AUTOINCREMENT,-- Eindeutige ID
                     hand_type TEXT NOT NULL,                  -- Typ der Hand: 'player' oder 'dealer'
                     start_card INTEGER,                       -- Startkarte der Hand
                     {", ".join(f"{col} INTEGER" for col in self.card_columns)},
@@ -41,7 +41,8 @@ class DatabaseManager:
                     can_double BOOLEAN DEFAULT 0,             -- Ob die Hand verdoppelt werden kann (immer False für Dealer)
                     can_split BOOLEAN DEFAULT 0,              -- Ob die Hand gesplittet werden kann (immer False für Dealer)
                     bust_chance FLOAT,                        -- Wahrscheinlichkeit, die Hand zu überbieten
-                    frequency INTEGER                          -- Häufigkeit der Hand
+                    frequency INTEGER,                        -- Häufigkeit der Hand
+                    probability FLOAT                         -- relative Wahrscheinlichleit der Hand
                 )
             '''
             print(f"Einheitliche Hände-Tabelle '{table_name}' wird erstellt.")
@@ -78,13 +79,13 @@ class DatabaseManager:
         query = "SELECT start_card,\n"
 
         for value in range(17, 21):
-            query += f"    SUM(CASE WHEN total_value = {value} THEN frequency ELSE 0 END) AS count_{value},\n"
+            query += f"    SUM(CASE WHEN total_value = {value} THEN probability ELSE 0 END) AS count_{value},\n"
 
         query += """
-            SUM(CASE WHEN total_value = 21 AND NOT is_blackjack THEN frequency ELSE 0 END) AS count_21,
-            SUM(CASE WHEN is_blackjack THEN frequency ELSE 0 END) AS count_blackjack,
-            SUM(CASE WHEN is_busted THEN frequency ELSE 0 END) AS count_busted,
-            SUM(frequency) AS total_hands
+            SUM(CASE WHEN total_value = 21 AND NOT is_blackjack THEN probability ELSE 0 END) AS count_21,
+            SUM(CASE WHEN is_blackjack THEN probability ELSE 0 END) AS count_blackjack,
+            SUM(CASE WHEN is_busted THEN probability ELSE 0 END) AS count_busted,
+            SUM(probability) AS total_hands
         FROM dealer_hands
         GROUP BY start_card
         ORDER BY start_card;
@@ -148,7 +149,7 @@ class DatabaseManager:
 
     def save_hand(self, table_name, hands_type, hand, start_card=None, total_value=0, minimum_value=0,
                   is_blackjack=False, is_starthand=False, is_busted=False,
-                  can_double=False, can_split=False, bust_chance=0, frequency=1):
+                  can_double=False, can_split=False, bust_chance=0.0, frequency=1, probability=1.0):
         """
         Speichert eine Hand in der angegebenen Tabelle.
 
@@ -166,6 +167,7 @@ class DatabaseManager:
             can_split (bool, optional): Ob die Hand gesplittet werden kann.
             bust_chance (float, optional): Wahrscheinlichkeit, die Hand zu überbieten.
             frequency (int): Häufigkeit der Hand.
+            probability (float): relative Wahrscheinlichkeit der Hand
         """
         # Häufigkeiten der Kartenwerte (1 bis 10) in der Hand berechnen
         card_frequencies = [hand.count(i) for i in range(1, 11)]  # Liste mit Häufigkeiten von Kartenwerten 1-10
@@ -182,10 +184,10 @@ class DatabaseManager:
         values = [hands_type, start_card] + card_frequencies  # hand_type und Kartenhäufigkeiten als Werte
         columns += ["hand_text", "total_value", "minimum_value",
                     "is_blackjack", "is_starthand", "is_busted",
-                    "can_double", "can_split", "bust_chance", "frequency"]
+                    "can_double", "can_split", "bust_chance", "frequency", "probability"]
         values += [hand_text, total_value, minimum_value,
                    is_blackjack, is_starthand, is_busted,
-                   can_double, can_split, bust_chance, frequency]
+                   can_double, can_split, bust_chance, frequency, probability]
 
         # SQL-Anweisung dynamisch erstellen
         placeholders = ", ".join(["?"] * len(values))
@@ -224,13 +226,13 @@ class DatabaseManager:
 
         # Dynamische Erstellung der Summen-Abfragen für 17 bis 20
         for value in range(17, 21):
-            query += f"    SUM(CASE WHEN total_value = {value} AND NOT is_blackjack AND NOT is_busted THEN frequency ELSE 0 END) AS count_{value},\n"
+            query += f"    SUM(CASE WHEN total_value = {value} AND NOT is_blackjack AND NOT is_busted THEN probality ELSE 0 END) AS count_{value},\n"
 
         # Ergänzung für 21, Blackjack und Busted
         query += """
-            SUM(CASE WHEN total_value = 21 AND NOT is_blackjack AND NOT is_busted THEN frequency ELSE 0 END) AS count_21,
-            SUM(CASE WHEN is_blackjack THEN frequency ELSE 0 END) AS count_blackjack,
-            SUM(CASE WHEN is_busted THEN frequency ELSE 0 END) AS count_busted
+            SUM(CASE WHEN total_value = 21 AND NOT is_blackjack AND NOT is_busted THEN probability ELSE 0 END) AS count_21,
+            SUM(CASE WHEN is_blackjack THEN probability ELSE 0 END) AS count_blackjack,
+            SUM(CASE WHEN is_busted THEN probability ELSE 0 END) AS count_busted
         FROM dealer_hands
         GROUP BY start_card
         ORDER BY start_card;

@@ -52,6 +52,9 @@ class DealerHands:
         # Berechne die Häufigkeit der Hand mit Berücksichtigung der Reihenfolge
         frequency = calc.hand_frequency_with_order(current_hand, original_frequencies, cards_to_ignore = 1)
 
+        # Berechnung der relativen Wahrscheinlichkeit der Hand, mit Berücksichtigung der Startkarte
+        probability = calc.hand_probability(current_hand)
+
         # Abbruchbedingung: Wenn der Dealerhände-Wert >= 17 ist Hand speichern und dann nicht weiter
         if total_value >= 17:
             self.db_manager.save_hand(
@@ -67,7 +70,8 @@ class DealerHands:
                 can_double=False,  # Dealerhände können nie verdoppeln
                 can_split=False,  # Dealerhände können nie splitten
                 bust_chance=0,  # Für Dealerhände optional
-                frequency=frequency
+                frequency=frequency,
+                probability=probability
             )
             return
 

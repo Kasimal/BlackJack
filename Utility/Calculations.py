@@ -131,7 +131,7 @@ def hand_value(hand, minimum=False):
             ace_count -= 1
     return total_value
 
-def hand_probability(hand, deck, start_cards=None):
+def hand_probability(hand, deck=None, start_cards=None):
     """
     Berechnet die Wahrscheinlichkeit einer bestimmten Hand basierend auf der Häufigkeit der Karten im Deck,
     wobei mögliche Startkarten ausgeschlossen werden.
@@ -145,25 +145,26 @@ def hand_probability(hand, deck, start_cards=None):
         float: Die Wahrscheinlichkeit, die gegebene Hand zu ziehen, unter Berücksichtigung der Deckzusammensetzung.
     """
     probability = 1.0
-    deck_copy = deck.copy()  # Hole eine Kopie des Decks
-    total_cards = deck.total_cards()  # Gesamtzahl der Karten im Deck
+    if deck is None:
+        deck_copy = Deck()
+    else:
+        deck_copy = deck.copy()  # Hole eine Kopie des Decks
+    total_cards = deck_copy.total_cards()  # Gesamtzahl der Karten im Deck
 
-    # Wenn Startkarten angegeben sind, reduzieren wir die Anzahl dieser Karten im Deck
-    if start_cards:
-        for card in start_cards:
-            try:
-                deck_copy.remove_card(card)  # Entferne die Karte aus dem Deck
-                total_cards -= 1  # Reduziere die Gesamtzahl der Karten
-            except ValueError:
-                pass  # Falls die Karte nicht im Deck ist, überspringe sie einfach
+    # Zählt, wie oft jede Startkarte in der Hand vorkommt
+    start_card_counts = {card: start_cards.count(card) for card in set(start_cards)} if start_cards else {}
 
-    # Berechnung der Wahrscheinlichkeit, die Hand zu ziehen
+    # Berechnung der Wahrscheinlichkeit für die Hand
     for card in hand:
+        if card in start_card_counts and start_card_counts[card] > 0:
+            start_card_counts[card] -= 1  # Ignoriere genau eine Instanz dieser Karte
+            continue
+
         if deck_copy.card_frequencies[card] > 0:
             probability *= deck_copy.card_frequencies[card] / total_cards
-            deck_copy.remove_card(card)  # Entferne die gezogene Karte
-            total_cards -= 1  # Reduziere die Gesamtzahl der Karten
+            deck_copy.remove_card(card)  # Entferne die gezogene Karte aus der Kopie des Decks
+            total_cards -= 1
         else:
-            return 0  # Wenn eine Karte nicht mehr im Deck ist, ist die Wahrscheinlichkeit 0
+            return 0  # Falls eine Karte nicht mehr verfügbar ist, ist die Wahrscheinlichkeit 0
 
     return probability
