@@ -61,7 +61,7 @@ def Dealer_Hands_statistics_from_DB():
 if __name__ == "__main__":
     #All_Hands_in_DB()
     Dealer_Hands_in_DB()
-    #Dealer_Hands_statistics_from_DB()
+    Dealer_Hands_statistics_from_DB()
 
 
 
