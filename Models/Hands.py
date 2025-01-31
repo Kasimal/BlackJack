@@ -52,7 +52,7 @@ class Hands:
         # Wahrscheinlichkeit zu überbieten
         bust_chance = calc.bust_probability(current_hand)
 
-        self.db_manager.save_hand(
+        self.db_manager.save_hands(
             table_name="hands",  # Tabelle bleibt gleich
             hands_type="player",  # Spielerhände werden gespeichert
             hand=current_hand,
