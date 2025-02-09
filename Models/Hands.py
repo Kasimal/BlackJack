@@ -21,14 +21,20 @@ class Hands:
         """
         self.generate_hands_recursive([])
 
-    def generate_hands_recursive(self, current_hand, start_card=1):
+    def generate_hands_recursive(self, current_hand=None, start_card=1, hands_to_insert=None):
         """
         Rekursive Funktion zur Generierung von Händen in sortierter Reihenfolge.
 
         Args:
             current_hand (list): Die aktuelle Hand als Liste der Kartenzahlen.
             start_card (int): Die minimale Karte, die in dieser Iteration hinzugefügt werden darf.
+            hands_to_insert (list): Liste der gesammelten Hände für den Batch-Insert.
         """
+        if current_hand is None:
+            current_hand = []
+        if hands_to_insert is None:
+            hands_to_insert = []  # Initialisierung hier innerhalb der Methode
+
         # Berechne den Minimalwert der aktuellen Hand
         minimum_value = calc.hand_value(current_hand, minimum=True)
 
@@ -52,9 +58,10 @@ class Hands:
         # Wahrscheinlichkeit zu überbieten
         bust_chance = calc.bust_probability(current_hand)
 
-        self.db_manager.save_hands("hands", [{
+        # Hand in die Liste aufnehmen
+        hands_to_insert.append({
             "hands_type": "player",
-            "hand": current_hand,
+            "hand": current_hand.copy(),
             "start_card": None,
             "total_value": total_value,
             "minimum_value": minimum_value,
@@ -66,15 +73,21 @@ class Hands:
             "bust_chance": bust_chance,
             "frequency": frequency,
             "probability": 0.0  # nicht erforderlich
-        }])
+        })
 
         # Erzeuge neue Hände, indem jede mögliche Karte zur aktuellen Hand hinzugefügt wird
         for card in self.deck.get_available_cards():
             if card >= start_card:  # Nur Karten hinzufügen, die >= der letzten Karte sind
                 next_hand = current_hand + [card]  # Füge die Karte zur aktuellen Hand hinzu
                 if self.deck.original_card_frequencies[card] - next_hand.count(card) >= 0:
-                    print(next_hand)
-                    self.generate_hands_recursive(next_hand, start_card=card)
+                    self.generate_hands_recursive(next_hand, card, hands_to_insert)  # Jetzt korrekt
+
+        # Nach der Rekursion: Alle Hände auf einmal speichern
+        if not current_hand:  # Nur nach der vollständigen Generierung speichern
+            self.db_manager.save_hands("hands", hands_to_insert)
+            print(f"{len(hands_to_insert)} Hände wurden erfolgreich gespeichert.")
+
+
 
 
 
