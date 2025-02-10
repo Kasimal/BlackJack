@@ -147,57 +147,6 @@ class DatabaseManager:
             ''')
             print(f"Tabelle '{table_name}' wurde gelöscht (falls sie existierte).")
 
-    def save_hand(self, table_name, hand_data):
-        """
-        Speichert eine einzelne Hand in der angegebenen Tabelle.
-
-        Args:
-            table_name (str): Name der Tabelle.
-            hand_data (dict): Ein Dictionary mit den Attributen der Hand.
-        """
-        # Spalten definieren
-        columns = ["hand_type", "start_card"] + [f"c{i}" for i in range(1, 11)] + [
-            "hand_text", "total_value", "minimum_value",
-            "is_blackjack", "is_starthand", "is_busted",
-            "can_double", "can_split", "bust_chance", "frequency", "probability"
-        ]
-
-        # SQL-Anweisung vorbereiten
-        placeholders = ", ".join(["?"] * len(columns))
-        sql = f'''
-            INSERT INTO {table_name} ({", ".join(columns)})
-            VALUES ({placeholders})
-        '''
-
-        # Werte vorbereiten
-        hand_text = ",".join(map(str, hand_data["hand"]))
-        card_frequencies = [hand_data["hand"].count(i) for i in range(1, 11)]
-
-        values = [
-            hand_data["hands_type"],
-            hand_data["start_card"] if hand_data["hands_type"] == "dealer" else None,
-            *card_frequencies,
-            hand_text,
-            hand_data["total_value"],
-            hand_data["minimum_value"],
-            hand_data["is_blackjack"],
-            hand_data["is_starthand"],
-            hand_data["is_busted"],
-            hand_data["can_double"],
-            hand_data["can_split"],
-            hand_data["bust_chance"],
-            hand_data["frequency"],
-            hand_data["probability"]
-        ]
-
-        # Datenbank-Insert
-        try:
-            with self.connection as conn:
-                conn.execute(sql, values)  # Einzelne Hand einfügen
-            print("Hand erfolgreich gespeichert.")
-        except sqlite3.IntegrityError as e:
-            print(f"Fehler beim Speichern der Hand: {e}")
-
     def save_hands(self, table_name, hands):
         """
         Speichert mehrere Hände auf einmal in der angegebenen Tabelle (Batch-Insert).

@@ -56,7 +56,7 @@ class DealerHands:
         is_busted = total_value > 21
 
         # Hand speichern, wenn Dealer mindestens 17 hat
-        if total_value >= 17:
+        if total_value >= self.dealer_threshold:
             print(f"Speichere Hand: {current_hand}")
             hands_to_insert.append({
                 "hands_type": "dealer",
