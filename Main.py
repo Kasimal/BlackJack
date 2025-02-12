@@ -4,7 +4,7 @@ from Models.Dealer_hands import DealerHands
 from Utility.DB import DatabaseManager
 
 
-def All_Hands_in_DB():
+def All_Hands_in_DB(missing_cards=None):
     # 1. Datenbank vorbereiten
     db_path = "Data/blackjack.db"
     db_manager = DatabaseManager(db_path)
@@ -21,13 +21,14 @@ def All_Hands_in_DB():
 
     # 4. Hände generieren und speichern
     print("Generiere und speichere alle möglichen Hände...")
+    #hands_generator.generate_and_save_hands()
     hands_generator.generate_and_save_hands()
     print("Alle Hände wurden erfolgreich generiert und gespeichert!")
 
     # 5. Statusbericht
     db_manager.print_hand_count(table_name)
 
-def Dealer_Hands_in_DB():
+def Dealer_Hands_in_DB(missing_cards=None):
     # 1. Datenbank vorbereiten
     db_path = "Data/blackjack.db"
     db_manager = DatabaseManager(db_path)
@@ -42,7 +43,8 @@ def Dealer_Hands_in_DB():
     hands_generator = DealerHands(deck, db_manager)
 
     # 4. Dealer-Hände generieren und speichern
-    hands_generator.generate_dealer_hands(table_name)
+    #hands_generator.generate_dealer_hands(table_name)
+    hands_generator.generate_dealer_hands(table_name, missing_cards=[1, 1, 1])
 
     # 6. Statusbericht
     db_manager.print_hand_count(table_name)
@@ -60,7 +62,8 @@ def Dealer_Hands_statistics_from_DB():
 
 if __name__ == "__main__":
     All_Hands_in_DB()
-    #Dealer_Hands_in_DB()
+    #All_Hands_in_DB(missing_cards=[1, 1, 1])
+    #Dealer_Hands_in_DB(missing_cards=[1, 1, 1])
     #Dealer_Hands_statistics_from_DB()
 
 
