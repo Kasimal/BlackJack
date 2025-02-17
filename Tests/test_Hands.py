@@ -25,7 +25,7 @@ class TestBlackjackHands(unittest.TestCase):
         return backtrack(n, 0, 1)
 
     def test_hand_counts(self):
-        for n in range(1, 13):  # for hands with 1 to 12 cards
+        for n in range(0, 14):  # für Hände mit 0 bis 13 Karten
             with self.subTest(n=n):
                 calculated = self.count_n_card_hands(n)
                 with self.db_manager.connection:
