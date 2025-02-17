@@ -8,6 +8,7 @@ class DealerHands:
         self.deck = deck
         self.db_manager = db_manager
 
+
     def generate_dealer_hands(self, table_name, start_card=None, missing_cards=None):
         """
         Generiert und speichert alle möglichen Dealerhände für eine bestimmte Startkarte oder für alle Karten.
@@ -50,6 +51,7 @@ class DealerHands:
         if hands_to_insert:
             self.db_manager.save_hands(table_name, hands_to_insert)
             print(f"{len(hands_to_insert)} Dealerhände gespeichert in Tabelle '{table_name}'.")
+
 
     def _generate_dealer_hands_recursive(self, table_name, current_hand, start_card, original_frequencies,
                                          hands_to_insert):

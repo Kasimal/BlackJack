@@ -1,5 +1,6 @@
 deck_count = 1  #Globale Variable für die Anzahl der Decks, Standard für Testzwecke ist 1 für ein Deck aus 52 Karten, Standard für Kasinos ist 6 Decks aus zusammen 312 Karten.
 
+
 class Deck:
     def __init__(self):
         """Erstellt ein Deck mit Kartenwerten von 1 bis 10 und ihren Häufigkeiten."""
@@ -19,6 +20,7 @@ class Deck:
         }
         self.original_card_frequencies = self.card_frequencies.copy()
 
+
     def remove_card(self, card):
         """
         Entfernt eine Karte aus dem Deck, indem ihre Häufigkeit um 1 reduziert wird.
@@ -34,9 +36,11 @@ class Deck:
         else:
             raise ValueError(f"Karte {card} ist nicht mehr im Deck verfügbar.")
 
+
     def restore_card(self, card):
         """Fügt eine Karte zurück ins Deck."""
         self.card_frequencies[card] += 1
+
 
     def get_available_cards(self):
         """
@@ -44,9 +48,11 @@ class Deck:
         """
         return [card for card, freq in self.original_card_frequencies.items() if freq > 0]
 
+
     def total_cards(self):
         """Berechnet die Gesamtzahl der Karten im Deck."""
         return sum(self.card_frequencies.values())
+
 
     def get_missing_cards(self):
         """
@@ -59,6 +65,7 @@ class Deck:
             if self.original_card_frequencies[card] > self.card_frequencies.get(card, 0)
         }
 
+
     def get_card_counts(self):
         """
         Gibt die Häufigkeit jeder Karte im Deck in der Reihenfolge 1 bis 10 zurück.
@@ -67,6 +74,7 @@ class Deck:
             list: Eine Liste von Häufigkeiten für jede Karte von 1 bis 10.
         """
         return [self.card_frequencies.get(card, 0) for card in range(1, 11)]
+
 
     def copy(self):
         """

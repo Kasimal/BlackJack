@@ -1,6 +1,5 @@
 from collections import Counter
 import math
-
 from Models.Deck import Deck
 
 
@@ -37,6 +36,7 @@ def hand_frequency_with_order(current_hand, original_frequencies, cards_to_ignor
 
     return frequency
 
+
 def hand_frequency(cards, deck=None):
     """
     Berechnet die Häufigkeit einer Hand basierend auf den fehlenden Karten.
@@ -68,6 +68,7 @@ def hand_frequency(cards, deck=None):
         frequency //= math.factorial(count)  # Teile durch die Anzahl der Permutationen
 
     return frequency
+
 
 def bust_probability(current_hand, deck=None):
     """
@@ -107,6 +108,7 @@ def bust_probability(current_hand, deck=None):
     # Berechne die Wahrscheinlichkeit
     return bust_card_count / total_cards_left
 
+
 def hand_value(hand, minimum=False):
     """
     Berechnet den Wert einer Hand.
@@ -130,6 +132,7 @@ def hand_value(hand, minimum=False):
             total_value += 10
             ace_count -= 1
     return total_value
+
 
 def hand_probability(hand, deck=None, start_cards=None):
     """

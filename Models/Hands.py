@@ -14,6 +14,7 @@ class Hands:
         self.deck = deck
         self.db_manager = db_manager
 
+
     def generate_and_save_hands(self, missing_cards=None):
         """
         Generiert und speichert alle möglichen Hände mit einem maximalen minimum_value von 21.
@@ -32,6 +33,7 @@ class Hands:
                     adjusted_frequencies[card] = max(0, adjusted_frequencies[card] - 1)  # Verhindert negative Werte
 
         self.generate_hands_recursive([], 1, [], adjusted_frequencies)
+
 
     def generate_hands_recursive(self, current_hand=None, start_card=1, hands_to_insert=None, adjusted_frequencies=None):
         """

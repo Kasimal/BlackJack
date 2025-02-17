@@ -17,11 +17,11 @@ def All_Hands_in_DB(missing_cards=None):
     deck = Deck()  # Ein Deck
 
     # 3. Hands-Objekt erstellen
-    hands_generator = Hands(deck,db_manager)
+    hands_generator = Hands(deck, db_manager)
 
     # 4. Hände generieren und speichern
     print("Generiere und speichere alle möglichen Hände...")
-    hands_generator.generate_and_save_hands()
+    hands_generator.generate_and_save_hands(missing_cards)
     print("Alle Hände wurden erfolgreich generiert und gespeichert!")
 
     # 5. Statusbericht
@@ -29,6 +29,7 @@ def All_Hands_in_DB(missing_cards=None):
 
     # 6. DB schließen
     db_manager.close()
+
 
 def Dealer_Hands_in_DB(missing_cards=None):
     # 1. Datenbank vorbereiten
@@ -58,6 +59,7 @@ def Dealer_Hands_in_DB(missing_cards=None):
     # 8. DB schließen
     db_manager.close()
 
+
 def Dealer_Hands_statistics_from_DB():
     db_path = "Data/blackjack.db"
     db_manager = DatabaseManager(db_path)
@@ -71,7 +73,3 @@ if __name__ == "__main__":
     Dealer_Hands_in_DB()
     #Dealer_Hands_in_DB(missing_cards=[1, 1, 1])
     Dealer_Hands_statistics_from_DB()
-
-
-
-
