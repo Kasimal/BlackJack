@@ -53,8 +53,7 @@ class DatabaseManager:
 
     def _create_stats_table(self):
         """Erstellt die Tabelle für die Dealerhand-Statistiken mit relativen Häufigkeiten, falls sie nicht existiert."""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        cursor = self.connection.cursor()
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS dealer_hand_stats (
                 start_card TEXT PRIMARY KEY,
@@ -67,13 +66,11 @@ class DatabaseManager:
                 count_busted REAL DEFAULT 0
             )
         """)
-        conn.commit()
-        conn.close()
+        self.connection.commit()
 
     def update_dealer_hand_statistics(self):
         """Berechnet die relativen Häufigkeiten der Dealerhände nach Startkarte."""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        cursor = self.connection.cursor()
 
         # Basis-Query zur Berechnung der absoluten Häufigkeiten
         query = "SELECT start_card,\n"
@@ -118,13 +115,12 @@ class DatabaseManager:
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """, relative_values)
 
-        conn.commit()
-        conn.close()
+        self.connection.commit()
 
     def inspect_table_columns(self, table_name):
         """Inspects the columns of a given table."""
         with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
+            cursor = self.connection.cursor()
             cursor.execute(f"PRAGMA table_info({table_name});")
             columns = cursor.fetchall()
 
@@ -218,8 +214,7 @@ class DatabaseManager:
 
     def get_dealer_hand_statistics(self):
         """Gibt eine Auswertung der Dealerhände nach Startkarte zurück."""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        cursor = self.connection.cursor()
 
         # Basis-Query
         query = "SELECT start_card,\n"
@@ -240,8 +235,6 @@ class DatabaseManager:
 
         cursor.execute(query)
         results = cursor.fetchall()
-        conn.close()
-
         return results
 
     def fetch_all_hands(self, table_name):
