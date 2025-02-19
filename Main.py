@@ -1,6 +1,7 @@
 from Models.Deck import Deck
 from Models.Hands import Hands
 from Models.Dealer_hands import DealerHands
+from Utility.Calculations import probability_distribution
 from Utility.DB import DatabaseManager
 
 
@@ -68,8 +69,12 @@ def Dealer_Hands_statistics_from_DB():
 
 
 if __name__ == "__main__":
-    All_Hands_in_DB()
+    #All_Hands_in_DB()
     #All_Hands_in_DB(missing_cards=[1, 1, 1])
-    Dealer_Hands_in_DB()
+    #Dealer_Hands_in_DB()
     #Dealer_Hands_in_DB(missing_cards=[1, 1, 1])
-    Dealer_Hands_statistics_from_DB()
+    #Dealer_Hands_statistics_from_DB()
+    hand = [1, 1, 5]  # Hand auszuwerten
+    probabilities = probability_distribution(hand)
+    for key, value in probabilities.items():
+        print(f"{key}: {value:.2%}")
