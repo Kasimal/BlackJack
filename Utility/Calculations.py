@@ -109,14 +109,16 @@ def bust_probability(current_hand, deck=None):
     return bust_card_count / total_cards_left
 
 
-def probability_distribution(current_hand, deck=None):
+def probability_distribution(current_hand, deck=None, dealer_cards=None):
     """
-    Berechnet die Wahrscheinlichkeitsverteilung für eine Hand beim Ziehen einer weiteren Karte.
+    Berechnet die Wahrscheinlichkeitsverteilung für eine Hand beim Ziehen einer weiteren Karte,
+    unter Berücksichtigung bekannter Dealer-Karten.
 
     Args:
         current_hand (list[int]): Die aktuelle Hand.
         deck (Deck, optional): Eine Instanz des Decks, um die Kartenhäufigkeiten zu erhalten.
                                Wenn nicht angegeben, wird ein Standarddeck verwendet.
+        dealer_cards (list[int], optional): Bekannte Karten des Dealers, die aus dem Deck entfernt werden.
 
     Returns:
         dict: Ein Dictionary mit den Wahrscheinlichkeiten für:
@@ -132,15 +134,18 @@ def probability_distribution(current_hand, deck=None):
     if deck is None:
         deck = Deck()
 
+    if dealer_cards is None:
+        dealer_cards = []
+
     minimum_value = hand_value(current_hand, minimum=True)
 
     # Wenn die Hand schon über 21 ist, sind alle Wahrscheinlichkeiten 0, außer "Bust"
     if minimum_value > 21:
         return {"<=16": 0.0, "17": 0.0, "18": 0.0, "19": 0.0, "20": 0.0, "21": 0.0, "Blackjack": 0.0, "Bust": 1.0}
 
-    # Verbleibende Karten berechnen
+    # Verbleibende Karten berechnen unter Berücksichtigung der bekannten Dealer-Karten
     remaining_frequencies = {
-        card: deck.original_card_frequencies.get(card, 0) - current_hand.count(card)
+        card: max(0, deck.original_card_frequencies.get(card, 0) - current_hand.count(card) - dealer_cards.count(card))
         for card in deck.original_card_frequencies
     }
 
