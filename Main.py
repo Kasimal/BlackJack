@@ -31,7 +31,6 @@ def All_Hands_in_DB(missing_cards=None):
     # 6. DB schließen
     db_manager.close()
 
-
 def Dealer_Hands_in_DB(missing_cards=None):
     # 1. Datenbank vorbereiten
     db_path = "Data/blackjack.db"
@@ -60,12 +59,23 @@ def Dealer_Hands_in_DB(missing_cards=None):
     # 8. DB schließen
     db_manager.close()
 
-
 def Dealer_Hands_statistics_from_DB():
     db_path = "Data/blackjack.db"
     db_manager = DatabaseManager(db_path)
     db_manager.update_dealer_hand_statistics()
+    db_manager.inspect_table_columns("Full_player_hands")
+    deck = Deck()  # Ein Deck
+    hands_generator = Hands(deck, db_manager)
+    hands_generator.generate_and_save_full_player_hands
     db_manager.close()
+
+def Full_Hands(missing_cards=None):
+    db_path = "Data/blackjack.db"
+    db_manager = DatabaseManager(db_path)
+    db_manager.create_table_full_player_hands()
+    db_manager.
+    db_manager.close()
+
 
 
 if __name__ == "__main__":
