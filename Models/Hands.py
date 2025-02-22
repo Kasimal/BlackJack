@@ -123,7 +123,7 @@ class Hands:
 
         hands_to_insert = []
         self.generate_full_player_hands_recursive([], 1, dealer_cards, hands_to_insert, deck)
-        self.save_full_hands("full_player_hands", hands_to_insert)
+        self.db_manager.save_full_hands("Full_player_hands", hands_to_insert)
         print(f"{len(hands_to_insert)} Spielerhände gespeichert.")
 
     def generate_full_player_hands_recursive(self, current_hand=None, start_card=1, dealer_cards=None, hands_to_insert=None, deck=None):
