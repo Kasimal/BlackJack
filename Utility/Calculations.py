@@ -109,6 +109,79 @@ def bust_probability(current_hand, deck=None):
     return bust_card_count / total_cards_left
 
 
+def probability_distribution(current_hand, deck=None, dealer_cards=None):
+    """
+    Berechnet die Wahrscheinlichkeitsverteilung für eine Hand beim Ziehen einer weiteren Karte,
+    unter Berücksichtigung bekannter Dealer-Karten.
+
+    Args:
+        current_hand (list[int]): Die aktuelle Hand.
+        deck (Deck, optional): Eine Instanz des Decks, um die Kartenhäufigkeiten zu erhalten.
+                               Wenn nicht angegeben, wird ein Standarddeck verwendet.
+        dealer_cards (list[int], optional): Bekannte Karten des Dealers, die aus dem Deck entfernt werden.
+
+    Returns:
+        dict: Ein Dictionary mit den Wahrscheinlichkeiten für:
+              - "≤16": Wahrscheinlichkeit für alle Werte 16 oder kleiner.
+              - "17": Wahrscheinlichkeit genau 17 zu erreichen.
+              - "18": Wahrscheinlichkeit genau 18 zu erreichen.
+              - "19": Wahrscheinlichkeit genau 19 zu erreichen.
+              - "20": Wahrscheinlichkeit genau 20 zu erreichen.
+              - "21": Wahrscheinlichkeit genau 21 zu erreichen (ohne Blackjack).
+              - "Blackjack": Wahrscheinlichkeit für einen Blackjack (nur mit zwei Karten).
+              - "Bust": Wahrscheinlichkeit, die Hand zu überbieten (>21).
+    """
+    if deck is None:
+        deck = Deck()
+
+    if dealer_cards is None:
+        dealer_cards = []
+
+    minimum_value = hand_value(current_hand, minimum=True)
+
+    # Wenn die Hand schon über 21 ist, sind alle Wahrscheinlichkeiten 0, außer "Bust"
+    if minimum_value > 21:
+        return {"<=16": 0.0, "17": 0.0, "18": 0.0, "19": 0.0, "20": 0.0, "21": 0.0, "Blackjack": 0.0, "Bust": 1.0}
+
+    # Verbleibende Karten berechnen unter Berücksichtigung der bekannten Dealer-Karten
+    remaining_frequencies = {
+        card: max(0, deck.original_card_frequencies.get(card, 0) - current_hand.count(card) - dealer_cards.count(card))
+        for card in deck.original_card_frequencies
+    }
+
+    total_cards_left = sum(remaining_frequencies.values())
+    if total_cards_left <= 0:
+        return {"<=16": 0.0, "17": 0.0, "18": 0.0, "19": 0.0, "20": 0.0, "21": 0.0, "Blackjack": 0.0, "Bust": 0.0}
+
+    probabilities = {"<=16": 0.0, "17": 0.0, "18": 0.0, "19": 0.0, "20": 0.0, "21": 0.0, "Blackjack": 0.0, "Bust": 0.0}
+
+    # Wahrscheinlichkeiten berechnen
+    for card, count in remaining_frequencies.items():
+        if count > 0:
+            new_hand = current_hand + [card]
+            new_value = hand_value(new_hand)
+
+            if new_value <= 16:
+                probabilities["<=16"] += count / total_cards_left
+            elif new_value == 17:
+                probabilities["17"] += count / total_cards_left
+            elif new_value == 18:
+                probabilities["18"] += count / total_cards_left
+            elif new_value == 19:
+                probabilities["19"] += count / total_cards_left
+            elif new_value == 20:
+                probabilities["20"] += count / total_cards_left
+            elif new_value == 21:
+                if len(current_hand) == 1:  # Falls genau zwei Karten genutzt werden → Blackjack
+                    probabilities["Blackjack"] += count / total_cards_left
+                else:
+                    probabilities["21"] += count / total_cards_left
+            else:  # Alles über 21 → Bust
+                probabilities["Bust"] += count / total_cards_left
+
+    return probabilities
+
+
 def hand_value(hand, minimum=False):
     """
     Berechnet den Wert einer Hand.

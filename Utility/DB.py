@@ -53,6 +53,58 @@ class DatabaseManager:
             print(f"Tabelle '{table_name}' wurde erfolgreich erstellt.")
 
 
+    def create_table_full_player_hands(self, table_name="Full_player_hands"):
+        """
+        Erstellt eine einheitliche Tabelle für Blackjack-Hände, die sowohl Spieler- als auch Dealerhände abdecken kann.
+
+        Args:
+            table_name (str): Name der Tabelle.
+        """
+
+        with self.connection as conn:
+            cursor = conn.cursor()
+
+            # SQL für einheitliche Hände-Tabelle
+            sql = f'''
+                CREATE TABLE IF NOT EXISTS {table_name} (
+                    hand_id INTEGER PRIMARY KEY AUTOINCREMENT, -- Eindeutige ID
+                    hand_type TEXT NOT NULL,                   -- Typ der Hand: 'player' oder 'dealer'
+                    {", ".join(f"{col} INTEGER" for col in self.card_columns)},
+                    hand_text VARCHAR,                  -- Textuelle Darstellung der Hand
+                    total_value INTEGER,                       -- Gesamtwert der Hand
+                    minimum_value INTEGER,                     -- Minimalwert der Hand
+                    is_blackjack BOOLEAN,                      -- Ob die Hand ein Blackjack ist
+                    is_starthand BOOLEAN,                      -- Ob die Hand eine Starthand ist
+                    can_double BOOLEAN DEFAULT 0,              -- Ob die Hand verdoppelt werden kann
+                    can_split BOOLEAN DEFAULT 0,               -- Ob die Hand gesplittet werden kann
+                    frequency INTEGER,                         -- Häufigkeit der Hand
+                    probability FLOAT,                         -- Relative Wahrscheinlichkeit der Hand
+                    
+                    -- Wahrscheinlichkeiten für verschiedene Endwerte
+                    prob_16 FLOAT,                             -- Wahrscheinlichkeit für ≤16
+                    prob_17 FLOAT,                             -- Wahrscheinlichkeit für genau 17
+                    prob_18 FLOAT,                             -- Wahrscheinlichkeit für genau 18
+                    prob_19 FLOAT,                             -- Wahrscheinlichkeit für genau 19
+                    prob_20 FLOAT,                             -- Wahrscheinlichkeit für genau 20
+                    prob_21 FLOAT,                             -- Wahrscheinlichkeit für genau 21 (kein Blackjack)
+                    prob_blackjack FLOAT,                      -- Wahrscheinlichkeit für Blackjack (nur mit zwei Karten)
+                    prob_bust FLOAT,                           -- Wahrscheinlichkeit für Bust (>21)
+                
+                    -- Sieg- und Verlustwahrscheinlichkeiten abhängig von der Dealer-Startkarte
+                    dealer_start TEXT NOT NULL,                -- Differenzierung nach Dealer-Karten (z. B. "Ass (BJ möglich)", "10 (kein BJ)")
+                    win_hit FLOAT,                             -- Wahrscheinlichkeit zu gewinnen bei Hit
+                    loss_hit FLOAT,                            -- Wahrscheinlichkeit zu verlieren bei Hit
+                    win_stand FLOAT,                           -- Wahrscheinlichkeit zu gewinnen bei Stand
+                    loss_stand FLOAT                           -- Wahrscheinlichkeit zu verlieren bei Stand
+                )
+            '''
+            print(f"Volle Spieler-Hände-Tabelle '{table_name}' wird erstellt.")
+
+            # Ausführung der SQL-Anweisung
+            cursor.execute(sql)
+            print(f"Tabelle '{table_name}' wurde erfolgreich erstellt.")
+
+
     def _create_stats_table(self):
         """Erstellt die Tabelle für die Dealerhand-Statistiken mit relativen Häufigkeiten, falls sie nicht existiert."""
         cursor = self.connection.cursor()
@@ -181,8 +233,8 @@ class DatabaseManager:
             card_frequencies = [hand_data["hand"].count(i) for i in range(1, 11)]
 
             values.append([
-                hand_data["hands_type"],
-                hand_data["start_card"] if hand_data["hands_type"] == "dealer" else None,
+                hand_data["hand_type"],
+                hand_data["start_card"] if hand_data["hand_type"] == "dealer" else None,
                 *card_frequencies,
                 hand_text,
                 hand_data["total_value"],
@@ -204,6 +256,76 @@ class DatabaseManager:
         except sqlite3.IntegrityError as e:
             print(f"Fehler beim Speichern der Hände: {e}")
 
+    def save_full_hands(self, table_name, hands):
+        """
+        Speichert mehrere Hände auf einmal in der angegebenen Tabelle (Batch-Insert).
+
+        Args:
+            table_name (str): Name der Tabelle.
+            hands (list of dict): Eine Liste von Händen mit ihren Attributen.
+        """
+        if not hands:
+            return  # Falls keine Hände übergeben wurden, nichts tun
+
+        # Spalten definieren
+        columns = [
+                      "hand_type"
+                  ] + [f"c{i}" for i in range(1, 11)] + [
+                      "hand_text", "total_value", "minimum_value",
+                      "is_blackjack", "is_starthand",
+                      "can_double", "can_split", "frequency", "probability",
+                      "prob_16", "prob_17", "prob_18", "prob_19", "prob_20", "prob_21",
+                      "prob_blackjack", "prob_bust", "dealer_start",
+                      "win_hit", "loss_hit", "win_stand", "loss_stand"
+                  ]
+
+        # SQL-Anweisung vorbereiten
+        placeholders = ", ".join(["?"] * len(columns))
+        sql = f'''
+            INSERT INTO {table_name} ({", ".join(columns)})
+            VALUES ({placeholders})
+        '''
+
+        # Werte für Batch-Insert vorbereiten
+        values = []
+        for hand_data in hands:
+            hand_text = ",".join(map(str, hand_data["hand"]))
+            card_frequencies = [hand_data["hand"].count(i) for i in range(1, 11)]
+
+            values.append([
+                hand_data["hand_type"],
+                *card_frequencies,
+                hand_text,
+                hand_data["total_value"],
+                hand_data["minimum_value"],
+                hand_data["is_blackjack"],
+                hand_data["is_starthand"],
+                hand_data["can_double"],
+                hand_data["can_split"],
+                hand_data["frequency"],
+                hand_data["probability"],
+                hand_data["probabilities"]["<=16"],
+                hand_data["probabilities"]["17"],
+                hand_data["probabilities"]["18"],
+                hand_data["probabilities"]["19"],
+                hand_data["probabilities"]["20"],
+                hand_data["probabilities"]["21"],
+                hand_data["probabilities"]["Blackjack"],
+                hand_data["probabilities"]["Bust"],
+                ",".join(map(str, hand_data["dealer_start"])),  # Liste in String umwandeln
+                hand_data.get("win_hit", 0),
+                hand_data.get("loss_hit", 0),
+                hand_data.get("win_stand", 0),
+                hand_data.get("loss_stand", 0)
+            ])
+
+        # Datenbank-Insert in einer einzigen Transaktion
+        try:
+            with self.connection as conn:
+                conn.executemany(sql, values)  # Alle Hände auf einmal einfügen
+            print(f"{len(hands)} Hände erfolgreich in '{table_name}' gespeichert.")
+        except sqlite3.IntegrityError as e:
+            print(f"Fehler beim Speichern der Hände: {e}")
 
     def print_hand_count(self, table_name):
         """
