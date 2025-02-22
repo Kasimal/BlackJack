@@ -108,65 +108,65 @@ class Hands:
             print(f"{len(hands_to_insert)} Hände wurden erfolgreich gespeichert.")
 
 
-def generate_and_save_full_player_hands(dealer_cards=None, deck=None):
-    """
-    Generiert und speichert alle möglichen Spielerhände unter Berücksichtigung der bekannten Dealer-Karten.
+    def generate_and_save_full_player_hands(self, dealer_cards=None, deck=None):
+        """
+        Generiert und speichert alle möglichen Spielerhände unter Berücksichtigung der bekannten Dealer-Karten.
 
-    Args:
-        dealer_cards (list[int], optional): Bekannte Karten des Dealers.
-        deck (Deck, optional): Instanz des Decks.
-    """
-    if deck is None:
-        deck = Deck()
-    if dealer_cards is None:
-        dealer_cards = []
+        Args:
+            dealer_cards (list[int], optional): Bekannte Karten des Dealers.
+            deck (Deck, optional): Instanz des Decks.
+        """
+        if deck is None:
+            deck = Deck()
+        if dealer_cards is None:
+            dealer_cards = []
 
-    hands_to_insert = []
-    generate_full_player_hands_recursive([], 1, dealer_cards, hands_to_insert, deck)
-    save_hands("full_player_hands", hands_to_insert)
-    print(f"{len(hands_to_insert)} Spielerhände gespeichert.")
-
-def generate_full_player_hands_recursive(current_hand=None, start_card=1, dealer_cards=None, hands_to_insert=None, deck=None):
-    """
-    Rekursive Funktion zur Generierung von Spielerhänden und Berechnung ihrer Wahrscheinlichkeiten.
-
-    Args:
-        current_hand (list[int]): Die aktuelle Hand als Liste der Kartenzahlen.
-        start_card (int): Die minimale Karte, die in dieser Iteration hinzugefügt werden darf.
-        dealer_cards (list[int]): Bekannte Karten des Dealers, die aus dem Deck entfernt werden.
-        hands_to_insert (list): Liste der gesammelten Hände für den Batch-Insert.
-        deck (Deck): Instanz des Decks.
-    """
-    if current_hand is None:
-        current_hand = []
-    if dealer_cards is None:
-        dealer_cards = []
-    if hands_to_insert is None:
         hands_to_insert = []
-    if deck is None:
-        deck = Deck()
+        self.generate_full_player_hands_recursive([], 1, dealer_cards, hands_to_insert, deck)
+        self.save_full_hands("full_player_hands", hands_to_insert)
+        print(f"{len(hands_to_insert)} Spielerhände gespeichert.")
 
-    # Berechne den Minimalwert der aktuellen Hand
-    minimum_value = calc.hand_value(current_hand, minimum=True)
-    if minimum_value > 21:
-        return
+    def generate_full_player_hands_recursive(self, current_hand=None, start_card=1, dealer_cards=None, hands_to_insert=None, deck=None):
+        """
+        Rekursive Funktion zur Generierung von Spielerhänden und Berechnung ihrer Wahrscheinlichkeiten.
 
-    # Berechne Wahrscheinlichkeiten für diese Hand
-    probabilities = calc.probability_distribution(current_hand, deck, dealer_cards)
+        Args:
+            current_hand (list[int]): Die aktuelle Hand als Liste der Kartenzahlen.
+            start_card (int): Die minimale Karte, die in dieser Iteration hinzugefügt werden darf.
+            dealer_cards (list[int]): Bekannte Karten des Dealers, die aus dem Deck entfernt werden.
+            hands_to_insert (list): Liste der gesammelten Hände für den Batch-Insert.
+            deck (Deck): Instanz des Decks.
+        """
+        if current_hand is None:
+            current_hand = []
+        if dealer_cards is None:
+            dealer_cards = []
+        if hands_to_insert is None:
+            hands_to_insert = []
+        if deck is None:
+            deck = Deck()
 
-    # Hand speichern
-    hands_to_insert.append({
-        "hand": current_hand.copy(),
-        "probabilities": probabilities,
-        "dealer_start": dealer_cards.copy()
-    })
+        # Berechne den Minimalwert der aktuellen Hand
+        minimum_value = calc.hand_value(current_hand, minimum=True)
+        if minimum_value > 21:
+            return
 
-    # Erzeuge neue Hände
-    for card in deck.get_available_cards():
-        if card >= start_card:
-            next_hand = current_hand + [card]
-            if next_hand.count(card) <= deck.original_card_frequencies.get(card, 0) - dealer_cards.count(card):
-                generate_full_player_hands_recursive(next_hand, card, dealer_cards, hands_to_insert, deck)
+        # Berechne Wahrscheinlichkeiten für diese Hand
+        probabilities = calc.probability_distribution(current_hand, deck, dealer_cards)
+
+        # Hand speichern
+        hands_to_insert.append({
+            "hand": current_hand.copy(),
+            "probabilities": probabilities,
+            "dealer_start": dealer_cards.copy()
+        })
+
+        # Erzeuge neue Hände
+        for card in deck.get_available_cards():
+            if card >= start_card:
+                next_hand = current_hand + [card]
+                if next_hand.count(card) <= deck.original_card_frequencies.get(card, 0) - dealer_cards.count(card):
+                    self.generate_full_player_hands_recursive(next_hand, card, dealer_cards, hands_to_insert, deck)
 
 
 

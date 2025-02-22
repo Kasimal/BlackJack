@@ -66,16 +66,17 @@ def Dealer_Hands_statistics_from_DB():
     db_manager.inspect_table_columns("Full_player_hands")
     deck = Deck()  # Ein Deck
     hands_generator = Hands(deck, db_manager)
-    hands_generator.generate_and_save_full_player_hands
+    hands_generator.generate_and_save_full_player_hands()
     db_manager.close()
 
-def Full_Hands(missing_cards=None):
+def Full_Hands():
     db_path = "Data/blackjack.db"
     db_manager = DatabaseManager(db_path)
     db_manager.create_table_full_player_hands()
-    db_manager.
+    deck = Deck()
+    hands_generator = Hands(deck, db_manager)
+    hands_generator.generate_and_save_full_player_hands()
     db_manager.close()
-
 
 
 if __name__ == "__main__":
@@ -84,7 +85,9 @@ if __name__ == "__main__":
     #Dealer_Hands_in_DB()
     #Dealer_Hands_in_DB(missing_cards=[1, 1, 1])
     #Dealer_Hands_statistics_from_DB()
-    hand = [1, 1, 5]  # Hand auszuwerten
-    probabilities = probability_distribution(hand)
-    for key, value in probabilities.items():
-        print(f"{key}: {value:.2%}")
+    Full_Hands()
+
+    # hand = [1, 1, 5]  # Hand auszuwerten
+    # probabilities = probability_distribution(hand)
+    # for key, value in probabilities.items():
+    #     print(f"{key}: {value:.2%}")
