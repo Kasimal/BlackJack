@@ -70,7 +70,7 @@ class DatabaseManager:
                     hand_id INTEGER PRIMARY KEY AUTOINCREMENT, -- Eindeutige ID
                     hand_type TEXT NOT NULL,                   -- Typ der Hand: 'player' oder 'dealer'
                     {", ".join(f"{col} INTEGER" for col in self.card_columns)},
-                    hand_text VARCHAR UNIQUE,                  -- Textuelle Darstellung der Hand
+                    hand_text VARCHAR,                  -- Textuelle Darstellung der Hand
                     total_value INTEGER,                       -- Gesamtwert der Hand
                     minimum_value INTEGER,                     -- Minimalwert der Hand
                     is_blackjack BOOLEAN,                      -- Ob die Hand ein Blackjack ist
@@ -233,8 +233,8 @@ class DatabaseManager:
             card_frequencies = [hand_data["hand"].count(i) for i in range(1, 11)]
 
             values.append([
-                hand_data["hands_type"],
-                hand_data["start_card"] if hand_data["hands_type"] == "dealer" else None,
+                hand_data["hand_type"],
+                hand_data["start_card"] if hand_data["hand_type"] == "dealer" else None,
                 *card_frequencies,
                 hand_text,
                 hand_data["total_value"],
@@ -272,8 +272,8 @@ class DatabaseManager:
                       "hand_type"
                   ] + [f"c{i}" for i in range(1, 11)] + [
                       "hand_text", "total_value", "minimum_value",
-                      "is_blackjack", "is_starthand", "is_busted",
-                      "can_double", "can_split", "bust_chance", "frequency", "probability",
+                      "is_blackjack", "is_starthand",
+                      "can_double", "can_split", "frequency", "probability",
                       "prob_16", "prob_17", "prob_18", "prob_19", "prob_20", "prob_21",
                       "prob_blackjack", "prob_bust", "dealer_start",
                       "win_hit", "loss_hit", "win_stand", "loss_stand"
@@ -293,18 +293,15 @@ class DatabaseManager:
             card_frequencies = [hand_data["hand"].count(i) for i in range(1, 11)]
 
             values.append([
-                hand_data["hands_type"],
-                hand_data["start_card"] if hand_data["hands_type"] == "dealer" else None,
+                hand_data["hand_type"],
                 *card_frequencies,
                 hand_text,
                 hand_data["total_value"],
                 hand_data["minimum_value"],
                 hand_data["is_blackjack"],
                 hand_data["is_starthand"],
-                hand_data["is_busted"],
                 hand_data["can_double"],
                 hand_data["can_split"],
-                hand_data["bust_chance"],
                 hand_data["frequency"],
                 hand_data["probability"],
                 hand_data["probabilities"]["<=16"],
@@ -315,7 +312,7 @@ class DatabaseManager:
                 hand_data["probabilities"]["21"],
                 hand_data["probabilities"]["Blackjack"],
                 hand_data["probabilities"]["Bust"],
-                hand_data["dealer_start"],
+                ",".join(map(str, hand_data["dealer_start"])),  # Liste in String umwandeln
                 hand_data.get("win_hit", 0),
                 hand_data.get("loss_hit", 0),
                 hand_data.get("win_stand", 0),
