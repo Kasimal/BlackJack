@@ -195,6 +195,10 @@ class Hands:
             "loss_stand": 0.0
         })
 
+        # Falls der Dealer einen Blackjack hat und es eine Starthand ist, keine weiteren Karten hinzufügen
+        if is_starthand and "Blackjack" in dealer_cards:
+            return
+
         # Erzeuge neue Hände
         for card in deck.get_available_cards():
             if card >= start_card:
