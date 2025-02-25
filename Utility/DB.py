@@ -70,7 +70,8 @@ class DatabaseManager:
                     hand_id INTEGER PRIMARY KEY AUTOINCREMENT, -- Eindeutige ID
                     hand_type TEXT NOT NULL,                   -- Typ der Hand: 'player' oder 'dealer'
                     {", ".join(f"{col} INTEGER" for col in self.card_columns)},
-                    hand_text VARCHAR,                  -- Textuelle Darstellung der Hand
+                    hand_text VARCHAR,                         -- Textuelle Darstellung der Hand
+                    dealer_start TEXT NOT NULL,                -- Differenzierung nach Dealer-Karten
                     total_value INTEGER,                       -- Gesamtwert der Hand
                     minimum_value INTEGER,                     -- Minimalwert der Hand
                     is_blackjack BOOLEAN,                      -- Ob die Hand ein Blackjack ist
@@ -91,7 +92,6 @@ class DatabaseManager:
                     prob_bust FLOAT,                           -- Wahrscheinlichkeit für Bust (>21)
                 
                     -- Sieg- und Verlustwahrscheinlichkeiten abhängig von der Dealer-Startkarte
-                    dealer_start TEXT NOT NULL,                -- Differenzierung nach Dealer-Karten (z. B. "Ass (BJ möglich)", "10 (kein BJ)")
                     win_hit FLOAT,                             -- Wahrscheinlichkeit zu gewinnen bei Hit
                     loss_hit FLOAT,                            -- Wahrscheinlichkeit zu verlieren bei Hit
                     win_stand FLOAT,                           -- Wahrscheinlichkeit zu gewinnen bei Stand
@@ -271,11 +271,11 @@ class DatabaseManager:
         columns = [
                       "hand_type"
                   ] + [f"c{i}" for i in range(1, 11)] + [
-                      "hand_text", "total_value", "minimum_value",
+                      "hand_text", "dealer_start", "total_value", "minimum_value",
                       "is_blackjack", "is_starthand",
                       "can_double", "can_split", "frequency", "probability",
                       "prob_16", "prob_17", "prob_18", "prob_19", "prob_20", "prob_21",
-                      "prob_blackjack", "prob_bust", "dealer_start",
+                      "prob_blackjack", "prob_bust",
                       "win_hit", "loss_hit", "win_stand", "loss_stand"
                   ]
 
@@ -296,6 +296,7 @@ class DatabaseManager:
                 hand_data["hand_type"],
                 *card_frequencies,
                 hand_text,
+                ",".join(map(str, hand_data["dealer_start"])),  # Liste in String umwandeln
                 hand_data["total_value"],
                 hand_data["minimum_value"],
                 hand_data["is_blackjack"],
@@ -312,7 +313,6 @@ class DatabaseManager:
                 hand_data["probabilities"]["21"],
                 hand_data["probabilities"]["Blackjack"],
                 hand_data["probabilities"]["Bust"],
-                ",".join(map(str, hand_data["dealer_start"])),  # Liste in String umwandeln
                 hand_data.get("win_hit", 0),
                 hand_data.get("loss_hit", 0),
                 hand_data.get("win_stand", 0),

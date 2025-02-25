@@ -63,11 +63,6 @@ def Dealer_Hands_statistics_from_DB():
     db_path = "Data/blackjack.db"
     db_manager = DatabaseManager(db_path)
     db_manager.update_dealer_hand_statistics()
-    db_manager.inspect_table_columns("Full_player_hands")
-    deck = Deck()  # Ein Deck
-    hands_generator = Hands(deck, db_manager)
-    hands_generator.generate_and_save_full_player_hands()
-    db_manager.close()
 
 def Full_Hands():
     db_path = "Data/blackjack.db"

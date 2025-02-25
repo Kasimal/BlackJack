@@ -2,11 +2,11 @@ import Utility.Calculations as calc
 
 
 class DealerHands:
-    def __init__(self, deck, db_manager):
+    def __init__(self, deck, db_manager=None):
         # Initialisierung der Dealer-spezifischen Eigenschaften
         self.dealer_threshold = 17  # Mindestwert, ab dem der Dealer stoppt
         self.deck = deck
-        self.db_manager = db_manager
+        if db_manager is not None: self.db_manager = db_manager
 
 
     def generate_dealer_hands(self, table_name, start_card=None, missing_cards=None):
@@ -98,3 +98,53 @@ class DealerHands:
                 original_frequencies[card] -= 1
                 self._generate_dealer_hands_recursive(table_name, next_hand, start_card, original_frequencies, hands_to_insert)
                 original_frequencies[card] += 1  # Wiederherstellung nach Rekursion
+
+    def just_generate_dealer_hands(self, start_card, deck):
+        """
+        Generiert alle möglichen Dealer-Hände basierend auf einer Startkarte und berechnet deren Wahrscheinlichkeiten,
+        ohne sie in die Datenbank zu speichern.
+
+        Args:
+            start_card (int): Die erste Karte des Dealers.
+            deck (Deck): Instanz des Decks.
+
+        Returns:
+            dict: Verteilung der Dealer-Hände mit Wahrscheinlichkeiten für ≤16, 17, 18, 19, 20, 21, Blackjack und Bust.
+        """
+        dealer_hands = {}
+        self.just_generate_dealer_hands_recursive([start_card], deck, dealer_hands, no_blackjack=True if start_card in [10, 1] else False)
+        return dealer_hands
+
+    def just_generate_dealer_hands_recursive(self, current_hand, deck, dealer_hands, no_blackjack=False):
+        """
+        Rekursive Funktion zur Generierung aller möglichen Dealer-Hände und deren Wahrscheinlichkeiten.
+
+        Args:
+            current_hand (list[int]): Aktuelle Karten der Dealer-Hand.
+            deck (Deck): Instanz des Decks.
+            dealer_hands (dict): Sammlung der Dealer-Hand-Wahrscheinlichkeiten.
+            no_blackjack (bool): Falls True, werden keine Blackjacks generiert (nach Start mit 10 oder Ass).
+        """
+        # Berechne die Gesamtwerte
+        total_value = calc.hand_value(current_hand)
+        minimum_value = calc.hand_value(current_hand, minimum=True)
+
+        # Wenn die Hand über 21 geht, als Bust markieren
+        if minimum_value > 21:
+            dealer_hands["Bust"] = dealer_hands.get("Bust", 0) + calc.hand_frequency(current_hand)
+            return
+
+        # Falls mindestens 17 erreicht wurde, Hand speichern
+        if total_value >= 17:
+            key = "Blackjack" if total_value == 21 and len(current_hand) == 2 else str(total_value)
+            dealer_hands[key] = dealer_hands.get(key, 0) + calc.hand_frequency(current_hand)
+            return
+
+        # Nächste Karten ziehen
+        for card in deck.get_available_cards():
+            if len(current_hand) == 1 and no_blackjack and ((current_hand[0] == 10 and card == 1) or (current_hand[0] == 1 and card == 10)):
+                continue  # Verhindere Blackjack nach Start mit 10 oder Ass
+
+            next_hand = current_hand + [card]
+            if next_hand.count(card) <= deck.original_card_frequencies.get(card, 0):
+                self.just_generate_dealer_hands_recursive(next_hand, deck, dealer_hands, no_blackjack)

@@ -1,6 +1,9 @@
 from Models.Deck import Deck
+from Models.Dealer_hands import DealerHands
 from Utility.DB import DatabaseManager
+
 import Utility.Calculations as calc
+
 
 class Hands:
     def __init__(self, deck, db_manager):
@@ -154,6 +157,7 @@ class Hands:
             hands_to_insert = []
         if deck is None:
             deck = Deck()
+        dealer_hands = DealerHands(deck)
 
         # Berechne den Minimalwert der aktuellen Hand
         minimum_value = calc.hand_value(current_hand, minimum=True)
@@ -175,10 +179,30 @@ class Hands:
         # Berechne Wahrscheinlichkeiten für diese Hand
         probabilities = calc.probability_distribution(current_hand, deck, dealer_cards)
 
+        if dealer_cards == ["Blackjack"]:
+            win_stand = 0.0
+            loss_stand = 1.0 if not is_blackjack else 0.0
+            draw_stand = 1.0 if is_blackjack else 0.0
+
+            win_hit = win_stand
+            loss_hit = loss_stand
+            draw_hit = draw_stand
+        else:
+            dealer_hand_distribution = dealer_hands.just_generate_dealer_hands(dealer_cards[0], deck) if dealer_cards else {}
+
+            win_stand = sum(v for k, v in dealer_hand_distribution.items() if k != "Bust" and int(k) < total_value)
+            loss_stand = sum(v for k, v in dealer_hand_distribution.items() if k != "Bust" and int(k) > total_value)
+            draw_stand = dealer_hand_distribution.get(str(total_value), 0) if str(total_value) in dealer_hand_distribution else 0
+
+            win_hit = sum(probabilities[outcome] * sum(v for k, v in dealer_hand_distribution.items() if k != "Bust" and int(k) < outcome) for outcome in probabilities)
+            loss_hit = sum(probabilities[outcome] * sum(v for k, v in dealer_hand_distribution.items() if k != "Bust" and int(k) > outcome) for outcome in probabilities)
+            draw_hit = sum(probabilities[outcome] * dealer_hand_distribution.get(str(outcome), 0) for outcome in probabilities if str(outcome) in dealer_hand_distribution)
+
         # Hand zur Liste hinzufügen
         hands_to_insert.append({
             "hand_type": "player",
             "hand": current_hand.copy(),
+            "dealer_start": dealer_cards.copy(),
             "total_value": total_value,
             "minimum_value": minimum_value,
             "is_blackjack": is_blackjack,
@@ -188,11 +212,10 @@ class Hands:
             "frequency": frequency,
             "probability": 0.0,  # nicht erforderlich
             "probabilities": probabilities,
-            "dealer_start": dealer_cards.copy(),
-            "win_hit": 0.0,
-            "loss_hit": 0.0,
-            "win_stand": 0.0,
-            "loss_stand": 0.0
+            "win_hit": win_hit,
+            "loss_hit": loss_hit,
+            "win_stand": win_stand,
+            "loss_stand": loss_stand
         })
 
         # Falls der Dealer einen Blackjack hat und es eine Starthand ist, keine weiteren Karten hinzufügen
