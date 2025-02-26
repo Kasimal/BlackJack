@@ -194,9 +194,40 @@ class Hands:
             loss_stand = sum(v for k, v in dealer_hand_distribution.items() if k != "Bust" and int(k) > total_value)
             draw_stand = dealer_hand_distribution.get(str(total_value), 0) if str(total_value) in dealer_hand_distribution else 0
 
-            win_hit = sum(probabilities[outcome] * sum(v for k, v in dealer_hand_distribution.items() if k != "Bust" and int(k) < outcome) for outcome in probabilities)
-            loss_hit = sum(probabilities[outcome] * sum(v for k, v in dealer_hand_distribution.items() if k != "Bust" and int(k) > outcome) for outcome in probabilities)
-            draw_hit = sum(probabilities[outcome] * dealer_hand_distribution.get(str(outcome), 0) for outcome in probabilities if str(outcome) in dealer_hand_distribution)
+            win_hit = sum(
+                probabilities[outcome] * sum(
+                    v for k, v in dealer_hand_distribution.items()
+                    if (k.isdigit() and int(k) < (
+                        16 if outcome == "<=16" else int(outcome) if outcome.isdigit() else float('inf')))
+                    or k == "Bust"
+                )
+                for outcome in probabilities if outcome.isdigit() or outcome == "<=16" or outcome == "Blackjack"
+            )
+
+            loss_hit = sum(
+                probabilities[outcome] * sum(
+                    v for k, v in dealer_hand_distribution.items()
+                    if (k.isdigit() and int(k) > (
+                        16 if outcome == "<=16" else int(outcome) if outcome.isdigit() else float('-inf')))
+                    or k == "Blackjack"
+                )
+                for outcome in probabilities if outcome.isdigit() or outcome == "<=16" or outcome == "Blackjack"
+            )
+
+            draw_hit = sum(
+                probabilities[outcome] * dealer_hand_distribution.get(
+                    str(16 if outcome == "<=16" else int(outcome)) if (
+                                outcome.isdigit() or outcome == "<=16") else outcome, 0
+                )
+                for outcome in probabilities if
+                outcome.isdigit() or outcome == "<=16" or outcome == "Blackjack" or outcome == "Bust"
+            )
+
+            #win_hit = sum(probabilities[outcome] * sum(v for k, v in dealer_hand_distribution.items() if k.isdigit() and int(k) < outcome) for outcome in probabilities)
+            #loss_hit = sum(probabilities[outcome] * sum(v for k, v in dealer_hand_distribution.items() if k.isdigit() and int(k) > outcome) for outcome in probabilities)
+            #draw_hit = sum(probabilities[outcome] * dealer_hand_distribution.get(str(outcome), 0) for outcome in probabilities if str(outcome) in dealer_hand_distribution)
+
+        print(f"Spielerhand: {current_hand}, Dealer Start: {dealer_cards}")
 
         # Hand zur Liste hinzufügen
         hands_to_insert.append({
