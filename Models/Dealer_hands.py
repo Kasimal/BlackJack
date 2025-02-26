@@ -113,6 +113,13 @@ class DealerHands:
         """
         dealer_hands = {}
         self.just_generate_dealer_hands_recursive([start_card], deck, dealer_hands, no_blackjack=True if start_card in [10, 1] else False)
+
+        # Wahrscheinlichkeiten berechnen
+        total_hands = sum(dealer_hands.values())
+        if total_hands > 0:
+            for key in dealer_hands:
+                dealer_hands[key] /= total_hands
+
         return dealer_hands
 
     def just_generate_dealer_hands_recursive(self, current_hand, deck, dealer_hands, no_blackjack=False):

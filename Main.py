@@ -1,3 +1,5 @@
+import time
+
 from Models.Deck import Deck
 from Models.Hands import Hands
 from Models.Dealer_hands import DealerHands
@@ -73,7 +75,10 @@ def Full_Hands():
     db_manager.inspect_table_columns(table_name)
     deck = Deck()
     hands_generator = Hands(deck, db_manager)
+    start_time = time.time()  # Timer starten
     hands_generator.generate_and_save_full_player_hands()
+    end_time = time.time()  # Timer stoppen
+    print(f"Generierung der Dealer-Hände dauerte: {end_time - start_time:.4f} Sekunden")
     db_manager.close()
 
 
