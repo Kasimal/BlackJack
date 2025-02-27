@@ -112,13 +112,12 @@ class DealerHands:
             dict: Verteilung der Dealer-Hände mit Wahrscheinlichkeiten für ≤16, 17, 18, 19, 20, 21, Blackjack und Bust.
         """
         dealer_hands = {}
-        self.just_generate_dealer_hands_recursive([start_card], deck, dealer_hands, no_blackjack=True if start_card in [10, 1] else False)
+        total_frequency = self.just_generate_dealer_hands_recursive([start_card], deck, dealer_hands, no_blackjack=True if start_card in [10, 1] else False)
 
         # Wahrscheinlichkeiten berechnen
-        total_hands = sum(dealer_hands.values())
-        if total_hands > 0:
+        if total_frequency > 0:
             for key in dealer_hands:
-                dealer_hands[key] /= total_hands
+                dealer_hands[key] /= total_frequency
 
         return dealer_hands
 
@@ -131,27 +130,38 @@ class DealerHands:
             deck (Deck): Instanz des Decks.
             dealer_hands (dict): Sammlung der Dealer-Hand-Wahrscheinlichkeiten.
             no_blackjack (bool): Falls True, werden keine Blackjacks generiert (nach Start mit 10 oder Ass).
+        Returns:
+            int: Gesamtanzahl der generierten Hände (inklusive ihrer Häufigkeiten).
         """
         # Berechne die Gesamtwerte
         total_value = calc.hand_value(current_hand)
         minimum_value = calc.hand_value(current_hand, minimum=True)
 
+        # Wahrscheinlichkeit der aktuellen Hand berechnen
+        hand_prob = calc.hand_probability(current_hand, self.deck)
+
         # Wenn die Hand über 21 geht, als Bust markieren
         if minimum_value > 21:
-            dealer_hands["Bust"] = dealer_hands.get("Bust", 0) + calc.hand_frequency(current_hand)
-            return
+            dealer_hands["Bust"] = dealer_hands.get("Bust", 0) + hand_prob
+            return hand_prob
 
         # Falls mindestens 17 erreicht wurde, Hand speichern
         if total_value >= 17:
             key = "Blackjack" if total_value == 21 and len(current_hand) == 2 else str(total_value)
-            dealer_hands[key] = dealer_hands.get(key, 0) + calc.hand_frequency(current_hand)
-            return
+            dealer_hands[key] = dealer_hands.get(key, 0) + hand_prob
+            return hand_prob
 
+        total_generated = 0
         # Nächste Karten ziehen
         for card in deck.get_available_cards():
-            if len(current_hand) == 1 and no_blackjack and ((current_hand[0] == 10 and card == 1) or (current_hand[0] == 1 and card == 10)):
+            if len(current_hand) == 1 and no_blackjack and (
+                    (current_hand[0] == 10 and card == 1) or (current_hand[0] == 1 and card == 10)):
                 continue  # Verhindere Blackjack nach Start mit 10 oder Ass
 
             next_hand = current_hand + [card]
             if next_hand.count(card) <= deck.original_card_frequencies.get(card, 0):
-                self.just_generate_dealer_hands_recursive(next_hand, deck, dealer_hands, no_blackjack)
+                result = self.just_generate_dealer_hands_recursive(next_hand, deck, dealer_hands, no_blackjack)
+                if result is not None:
+                    total_generated += result
+
+        return total_generated
