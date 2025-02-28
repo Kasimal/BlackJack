@@ -119,6 +119,8 @@ class DealerHands:
             for key in dealer_hands:
                 dealer_hands[key] /= total_frequency
 
+        print(f"Dealer Hand Distribution for start card {start_card}: {dealer_hands}")
+
         return dealer_hands
 
     def just_generate_dealer_hands_recursive(self, current_hand, deck, dealer_hands, no_blackjack=False):
