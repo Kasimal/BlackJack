@@ -112,14 +112,15 @@ class DealerHands:
             dict: Verteilung der Dealer-Hände mit Wahrscheinlichkeiten für ≤16, 17, 18, 19, 20, 21, Blackjack und Bust.
         """
         dealer_hands = {}
-        total_frequency = self.just_generate_dealer_hands_recursive([start_card], deck, dealer_hands, no_blackjack=True if start_card in [10, 1] else False)
+        self.just_generate_dealer_hands_recursive([start_card], deck, dealer_hands, no_blackjack=True if start_card in [10, 1] else False)
 
-        # Wahrscheinlichkeiten berechnen
-        if total_frequency > 0:
+        # Normalisierung der Wahrscheinlichkeiten
+        total_probability = sum(dealer_hands.values())
+        if total_probability > 0:
             for key in dealer_hands:
-                dealer_hands[key] /= total_frequency
+                dealer_hands[key] /= total_probability
 
-        print(f"Dealer Hand Distribution for start card {start_card}: {dealer_hands}")
+        print(f"Dealer-Hand-Verteilung für Startkarte {start_card}: {dealer_hands}")
 
         return dealer_hands
 
