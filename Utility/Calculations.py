@@ -244,3 +244,95 @@ def hand_probability(hand, deck=None, start_cards=None):
             return 0  # Falls eine Karte nicht mehr verfügbar ist, ist die Wahrscheinlichkeit 0
 
     return probability
+
+
+#          Player               Win/Loss/Draw Matrix
+# Dealer | <=16  | 17    | 18    | 19    | 20    | 21    | Blackjack | Bust
+# -------|-------|-------|-------|-------|-------|-------|-----------|------
+# Bust   | Win   | Win   | Win   | Win   | Win   | Win   | Win       | Loss
+# 17     | Loss  | Draw  | Win   | Win   | Win   | Win   | Win       | Loss
+# 18     | Loss  | Loss  | Draw  | Win   | Win   | Win   | Win       | Loss
+# 19     | Loss  | Loss  | Loss  | Draw  | Win   | Win   | Win       | Loss
+# 20     | Loss  | Loss  | Loss  | Loss  | Draw  | Win   | Win       | Loss
+# 21     | Loss  | Loss  | Loss  | Loss  | Loss  | Draw  | Win       | Loss
+# Black- | Loss  | Loss  | Loss  | Loss  | Loss  | Loss  | Draw      | Loss
+# jack   |       |       |       |       |       |       |           |
+
+def calculate_hit_probabilities(dealer_hand_distribution, hit_probabilities):
+    """
+    Berechnet die Gewinn-, Verlust- und Unentschieden-Wahrscheinlichkeiten für die Hit-Aktion.
+
+    Args:
+        dealer_hand_distribution (dict): Ein Dictionary mit den Wahrscheinlichkeiten für die möglichen Dealer-Hände.
+        hit_probabilities (dict): Ein Dictionary mit den Wahrscheinlichkeiten für die möglichen Spieler-Outcomes nach einem Hit.
+
+    Returns:
+        tuple: Ein Tupel (win_prob, loss_prob, draw_prob) mit den Wahrscheinlichkeiten für Gewinn, Verlust und Unentschieden.
+    """
+    win_prob, loss_prob, draw_prob = 0.0, 0.0, 0.0
+
+    for dealer_outcome, dealer_prob in dealer_hand_distribution.items():
+        for player_outcome, player_prob in hit_probabilities.items():
+            probability = dealer_prob * player_prob
+
+            if player_outcome == 'Bust':
+                loss_prob += probability
+            elif dealer_outcome == 'Bust':
+                win_prob += probability
+            elif player_outcome == '<=16':
+                loss_prob += probability
+            elif player_outcome == 'Blackjack':
+                if dealer_outcome == 'Blackjack':
+                    draw_prob += probability
+                else:
+                    win_prob += probability
+            elif dealer_outcome == 'Blackjack':
+                loss_prob += probability
+            else:  # Beide haben numerische Werte (17-21)
+                dealer_value = int(dealer_outcome)
+                player_value = int(player_outcome)
+                if player_value > dealer_value:
+                    win_prob += probability
+                elif player_value < dealer_value:
+                    loss_prob += probability
+                else:
+                    draw_prob += probability
+
+    return win_prob, loss_prob, draw_prob
+
+def calculate_stand_probabilities(total_value, is_blackjack, dealer_hand_distribution):
+    """
+    Berechnet die Gewinn-, Verlust- und Unentschieden-Wahrscheinlichkeiten für die Stand-Aktion.
+
+    Args:
+        total_value (int): Der Gesamtwert der Spielerhand.
+        is_blackjack (bool): Gibt an, ob der Spieler ein Blackjack hat.
+        dealer_hand_distribution (dict): Ein Dictionary mit den Wahrscheinlichkeiten für die möglichen Dealer-Hände.
+
+    Returns:
+        tuple: Ein Tupel (win_prob, loss_prob, draw_prob) mit den Wahrscheinlichkeiten für Gewinn, Verlust und Unentschieden.
+    """
+    win_prob, loss_prob, draw_prob = 0.0, 0.0, 0.0
+
+    for dealer_outcome, dealer_prob in dealer_hand_distribution.items():
+        if dealer_outcome == 'Bust':
+            win_prob += dealer_prob
+        elif is_blackjack:
+            if dealer_outcome == 'Blackjack':
+                draw_prob += dealer_prob
+            else:
+                win_prob += dealer_prob
+        elif dealer_outcome == 'Blackjack':
+            loss_prob += dealer_prob
+        else:  # Beide haben numerische Werte
+            dealer_value = int(dealer_outcome)
+            if total_value > dealer_value:
+                win_prob += dealer_prob
+            elif total_value < dealer_value:
+                loss_prob += dealer_prob
+            else:
+                draw_prob += dealer_prob
+
+    return win_prob, loss_prob, draw_prob
+
+

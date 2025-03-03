@@ -177,9 +177,9 @@ class Hands:
         frequency = calc.hand_frequency(current_hand)
 
         # Berechne Wahrscheinlichkeiten für diese Hand
-        probabilities = calc.probability_distribution(current_hand, deck, dealer_cards)
+        hit_probabilities = calc.probability_distribution(current_hand, deck, dealer_cards)
 
-        print("Spieler-Hand Verteilung:", probabilities)
+        print("Spieler-Hand Verteilung:", hit_probabilities)
 
         if dealer_cards == ["Blackjack"]:
             win_stand = 0.0
@@ -192,69 +192,8 @@ class Hands:
         else:
             dealer_hand_distribution = dealer_hands.just_generate_dealer_hands(dealer_cards[0], deck) if dealer_cards else {}
 
-            #          Player               Win/Loss/Draw Matrix
-            # Dealer | <=16  | 17    | 18    | 19    | 20    | 21    | Blackjack | Bust
-            # -------|-------|-------|-------|-------|-------|-------|-----------|------
-            # Bust   | Win   | Win   | Win   | Win   | Win   | Win   | Win       | Loss
-            # 17     | Loss  | Draw  | Win   | Win   | Win   | Win   | Win       | Loss
-            # 18     | Loss  | Loss  | Draw  | Win   | Win   | Win   | Win       | Loss
-            # 19     | Loss  | Loss  | Loss  | Draw  | Win   | Win   | Win       | Loss
-            # 20     | Loss  | Loss  | Loss  | Loss  | Draw  | Win   | Win       | Loss
-            # 21     | Loss  | Loss  | Loss  | Loss  | Loss  | Draw  | Win       | Loss
-            # Black- | Loss  | Loss  | Loss  | Loss  | Loss  | Loss  | Draw      | Loss
-            # jack   |       |       |       |       |       |       |           |
-
-            #win_stand = sum(v for k, v in dealer_hand_distribution.items() if k != "Bust" and int(k) < total_value)
-            #loss_stand = sum(v for k, v in dealer_hand_distribution.items() if k != "Bust" and int(k) > total_value)
-            #draw_stand = dealer_hand_distribution.get(str(total_value), 0) if str(total_value) in dealer_hand_distribution else 0
-
-            win_stand, loss_stand, draw_stand = 0.0, 0.0, 0.0
-            for dealer_outcome, dealer_prob in dealer_hand_distribution.items():
-                if dealer_outcome == 'Bust':
-                    win_stand += dealer_prob
-                elif is_blackjack:
-                    if dealer_outcome == 'Blackjack':
-                        draw_stand += dealer_prob
-                    else:
-                        win_stand += dealer_prob
-                elif dealer_outcome == 'Blackjack':
-                    loss_stand += dealer_prob
-                else:  # Beide haben numerische Werte
-                    dealer_value = int(dealer_outcome)
-                    if total_value > dealer_value:
-                        win_stand += dealer_prob
-                    elif total_value < dealer_value:
-                        loss_stand += dealer_prob
-                    else:
-                        draw_stand += dealer_prob
-
-            win_hit, loss_hit, draw_hit = 0.0, 0.0, 0.0
-            for dealer_outcome, dealer_prob in dealer_hand_distribution.items():
-                for player_outcome, player_prob in probabilities.items():
-                    probability = dealer_prob * player_prob
-
-                    if player_outcome == 'Bust':
-                        loss_hit += probability
-                    elif dealer_outcome == 'Bust':
-                        win_hit += probability
-                    elif player_outcome == '<=16':
-                        loss_hit += probability
-                    elif player_outcome == 'Blackjack':
-                        if dealer_outcome == 'Blackjack':
-                            draw_hit += probability
-                        else:
-                            win_hit += probability
-                    elif dealer_outcome == 'Blackjack':
-                        loss_hit += probability
-                    else:  # Beide haben numerische Werte (17-21)
-                        dealer_value = int(dealer_outcome)
-                        player_value = int(player_outcome)
-                        if player_value > dealer_value:
-                            win_hit += probability
-                        elif player_value < dealer_value:
-                            loss_hit += probability
-                        else:
-                            draw_hit += probability
+            win_stand, loss_stand, draw_stand = calc.calculate_stand_probabilities(total_value, is_blackjack, dealer_hand_distribution)
+            win_hit, loss_hit, draw_hit = calc.calculate_hit_probabilities(dealer_hand_distribution, hit_probabilities)
 
         print(f"Spielerhand: {current_hand}, Dealer Start: {dealer_cards}")
 
@@ -271,7 +210,7 @@ class Hands:
             "can_split": can_split,
             "frequency": frequency,
             "probability": 0.0,  # nicht erforderlich
-            "probabilities": probabilities,
+            "probabilities": hit_probabilities,
             "win_hit": win_hit,
             "loss_hit": loss_hit,
             "win_stand": win_stand,
