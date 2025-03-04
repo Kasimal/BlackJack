@@ -258,13 +258,13 @@ def hand_probability(hand, deck=None, start_cards=None):
 # Black- | Loss  | Loss  | Loss  | Loss  | Loss  | Loss  | Draw      | Loss
 # jack   |       |       |       |       |       |       |           |
 
-def calculate_hit_probabilities(dealer_hand_distribution, hit_probabilities):
+def calculate_hit_probabilities(dealer_hand_distribution, probabilities):
     """
     Berechnet die Gewinn-, Verlust- und Unentschieden-Wahrscheinlichkeiten für die Hit-Aktion.
 
     Args:
         dealer_hand_distribution (dict): Ein Dictionary mit den Wahrscheinlichkeiten für die möglichen Dealer-Hände.
-        hit_probabilities (dict): Ein Dictionary mit den Wahrscheinlichkeiten für die möglichen Spieler-Outcomes nach einem Hit.
+        probabilities (dict): Ein Dictionary mit den Wahrscheinlichkeiten für die möglichen Spieler-Outcomes nach einem Hit.
 
     Returns:
         tuple: Ein Tupel (win_prob, loss_prob, draw_prob) mit den Wahrscheinlichkeiten für Gewinn, Verlust und Unentschieden.
@@ -272,7 +272,7 @@ def calculate_hit_probabilities(dealer_hand_distribution, hit_probabilities):
     win_prob, loss_prob, draw_prob = 0.0, 0.0, 0.0
 
     for dealer_outcome, dealer_prob in dealer_hand_distribution.items():
-        for player_outcome, player_prob in hit_probabilities.items():
+        for player_outcome, player_prob in probabilities.items():
             probability = dealer_prob * player_prob
 
             if player_outcome == 'Bust':

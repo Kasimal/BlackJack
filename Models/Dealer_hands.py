@@ -120,7 +120,7 @@ class DealerHands:
             for key in dealer_hands:
                 dealer_hands[key] /= total_probability
 
-        print(f"Dealer-Hand-Verteilung für Startkarte {start_card}: {dealer_hands}")
+        #print(f"Dealer-Hand-Verteilung für Startkarte {start_card}: {dealer_hands}")
 
         return dealer_hands
 

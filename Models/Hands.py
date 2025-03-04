@@ -179,7 +179,7 @@ class Hands:
         # Berechne Wahrscheinlichkeiten für diese Hand
         hit_probabilities = calc.probability_distribution(current_hand, deck, dealer_cards)
 
-        print("Spieler-Hand Verteilung:", hit_probabilities)
+        #print("Spieler-Hand Verteilung:", hit_probabilities)
 
         if dealer_cards == ["Blackjack"]:
             win_stand = 0.0
@@ -189,11 +189,13 @@ class Hands:
             win_hit = win_stand
             loss_hit = loss_stand
             draw_hit = draw_stand
+            action = 'Stand'
         else:
             dealer_hand_distribution = dealer_hands.just_generate_dealer_hands(dealer_cards[0], deck) if dealer_cards else {}
 
             win_stand, loss_stand, draw_stand = calc.calculate_stand_probabilities(total_value, is_blackjack, dealer_hand_distribution)
             win_hit, loss_hit, draw_hit = calc.calculate_hit_probabilities(dealer_hand_distribution, hit_probabilities)
+            action = 'Stand' if (win_stand - loss_stand) > (win_hit - loss_hit) else 'Hit'
 
         print(f"Spielerhand: {current_hand}, Dealer Start: {dealer_cards}")
 
@@ -214,7 +216,8 @@ class Hands:
             "win_hit": win_hit,
             "loss_hit": loss_hit,
             "win_stand": win_stand,
-            "loss_stand": loss_stand
+            "loss_stand": loss_stand,
+            "action": action
         })
 
         # Falls der Dealer einen Blackjack hat und es eine Starthand ist, keine weiteren Karten hinzufügen

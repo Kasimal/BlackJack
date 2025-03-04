@@ -95,7 +95,8 @@ class DatabaseManager:
                     win_hit FLOAT,                             -- Wahrscheinlichkeit zu gewinnen bei Hit
                     loss_hit FLOAT,                            -- Wahrscheinlichkeit zu verlieren bei Hit
                     win_stand FLOAT,                           -- Wahrscheinlichkeit zu gewinnen bei Stand
-                    loss_stand FLOAT                           -- Wahrscheinlichkeit zu verlieren bei Stand
+                    loss_stand FLOAT,                          -- Wahrscheinlichkeit zu verlieren bei Stand
+                    action VARCHAR                             -- Empfohlene Aktion, 'hit', 'stand' eventuell auch 'split' oder 'double' 
                 )
             '''
             print(f"Volle Spieler-Hände-Tabelle '{table_name}' wird erstellt.")
@@ -276,7 +277,8 @@ class DatabaseManager:
                       "can_double", "can_split", "frequency", "probability",
                       "prob_16", "prob_17", "prob_18", "prob_19", "prob_20", "prob_21",
                       "prob_blackjack", "prob_bust",
-                      "win_hit", "loss_hit", "win_stand", "loss_stand"
+                      "win_hit", "loss_hit", "win_stand", "loss_stand",
+                      "action"
                   ]
 
         # SQL-Anweisung vorbereiten
@@ -316,7 +318,8 @@ class DatabaseManager:
                 hand_data.get("win_hit", 0),
                 hand_data.get("loss_hit", 0),
                 hand_data.get("win_stand", 0),
-                hand_data.get("loss_stand", 0)
+                hand_data.get("loss_stand", 0),
+                hand_data.get("action"),
             ])
 
         # Datenbank-Insert in einer einzigen Transaktion
