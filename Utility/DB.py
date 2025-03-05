@@ -96,6 +96,7 @@ class DatabaseManager:
                     loss_hit FLOAT,                            -- Wahrscheinlichkeit zu verlieren bei Hit
                     win_stand FLOAT,                           -- Wahrscheinlichkeit zu gewinnen bei Stand
                     loss_stand FLOAT,                          -- Wahrscheinlichkeit zu verlieren bei Stand
+                    hit_stand FLOAT,                           -- Differenz Hit-chance und Stand-chance  
                     action VARCHAR                             -- Empfohlene Aktion, 'hit', 'stand' eventuell auch 'split' oder 'double' 
                 )
             '''
@@ -278,7 +279,7 @@ class DatabaseManager:
                       "prob_16", "prob_17", "prob_18", "prob_19", "prob_20", "prob_21",
                       "prob_blackjack", "prob_bust",
                       "win_hit", "loss_hit", "win_stand", "loss_stand",
-                      "action"
+                      "hit_stand", "action"
                   ]
 
         # SQL-Anweisung vorbereiten
@@ -319,6 +320,7 @@ class DatabaseManager:
                 hand_data.get("loss_hit", 0),
                 hand_data.get("win_stand", 0),
                 hand_data.get("loss_stand", 0),
+                hand_data.get("hit_stand"),
                 hand_data.get("action"),
             ])
 
