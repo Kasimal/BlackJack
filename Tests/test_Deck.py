@@ -50,6 +50,25 @@ class DeckTest(unittest.TestCase):
         print(f"Wahrscheinlichkeit bei {cards_10_10} zu überbieten: {bust_probability} Erwartet: 0.92")
         self.assertEqual(bust_probability, 0.92)
 
+    def test_probability_distribution(self):
+        hand = [1, 1, 5]
+        expected_probabilities = {
+            "<=16": 0.3878,
+            "17": 0.3265,
+            "18": 0.0408,
+            "19": 0.0816,
+            "20": 0.0816,
+            "21": 0.0816,
+            "Blackjack": 0.0,
+            "Bust": 0.0,
+        }
+        probabilities = calc.probability_distribution(hand)
+
+        for key, expected_value in expected_probabilities.items():
+            actual_value = float(probabilities.get(key, 0.0))  # Sicherstellen, dass es ein Float ist
+            print(f"{key}: Erwartet {expected_value:.4f}, Berechnet {actual_value:.4f}")
+            self.assertAlmostEqual(actual_value, expected_value, places=4)
+
 if __name__ == '__main__':
     unittest.main()
 
