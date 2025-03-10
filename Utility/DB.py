@@ -16,6 +16,41 @@ class DatabaseManager:
         self._create_stats_table()
 
 
+    def drop_table(self, table_name):
+        """
+        Löscht die angegebene Tabelle aus der Datenbank, falls sie existiert.
+
+        Args:
+            table_name (str): Der Name der Tabelle, die gelöscht werden soll.
+        """
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute(f'''
+                DROP TABLE IF EXISTS {table_name};
+            ''')
+            print(f"Tabelle '{table_name}' wurde gelöscht (falls sie existierte).")
+
+
+    def fetch_all_hands(self, table_name):
+        """
+        Ruft alle gespeicherten Hände aus der Datenbank ab.
+
+        Returns:
+            list: Eine Liste von Tupeln, die alle Hände und deren Eigenschaften repräsentieren.
+        """
+        with self.connection as conn:
+            cursor = conn.cursor()
+            cursor.execute(f"SELECT * FROM {table_name}")
+            return cursor.fetchall()
+
+
+    def close(self):
+        """
+        Schließt die Verbindung zur Datenbank.
+        """
+        self.connection.close()
+
+
     def create_table_hands(self, table_name):
         """
         Erstellt eine einheitliche Tabelle für Blackjack-Hände, die sowohl Spieler- als auch Dealerhände abdecken kann.
@@ -188,21 +223,6 @@ class DatabaseManager:
                     f"Spalten-ID: {col[0]}, Name: {col[1]}, Typ: {col[2]}, Not Null: {col[3]}, Default: {col[4]}, Primary Key: {col[5]}")
 
 
-    def drop_table(self, table_name):
-        """
-        Löscht die angegebene Tabelle aus der Datenbank, falls sie existiert.
-
-        Args:
-            table_name (str): Der Name der Tabelle, die gelöscht werden soll.
-        """
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            cursor.execute(f'''
-                DROP TABLE IF EXISTS {table_name};
-            ''')
-            print(f"Tabelle '{table_name}' wurde gelöscht (falls sie existierte).")
-
-
     def save_hands(self, table_name, hands):
         """
         Speichert mehrere Hände auf einmal in der angegebenen Tabelle (Batch-Insert).
@@ -372,22 +392,71 @@ class DatabaseManager:
         results = cursor.fetchall()
         return results
 
+    def create_player_dealer_startcard_overview(self, table_name):
+        # Bestehende Tabelle löschen
+        self.drop_table("Player_dealer_startcard_overview")
+        cursor = self.connection.cursor()
 
-    def fetch_all_hands(self, table_name):
+        # SQL-Query mit formatiertem Tabellen-Namen
+        query = f"""
+            CREATE TABLE Player_dealer_startcard_overview AS
+            SELECT 
+                minimum_value AS total_value,
+                dealer_start AS start_card,
+                MIN(hit_stand) AS min_hit_stand,
+                MAX(hit_stand) AS max_hit_stand,
+                AVG(hit_stand) AS avg_hit_stand,
+                CASE 
+                    WHEN AVG(hit_stand) >= 0 THEN 'hit'
+                    ELSE 'stand'
+                END AS recommended_action
+            FROM {table_name}
+            WHERE minimum_value = total_value  -- Nur harte Hände
+            AND dealer_start GLOB '[0-9]*'  -- Nur numerische Werte zulassen
+            GROUP BY total_value, start_card;
         """
-        Ruft alle gespeicherten Hände aus der Datenbank ab.
 
-        Returns:
-            list: Eine Liste von Tupeln, die alle Hände und deren Eigenschaften repräsentieren.
-        """
-        with self.connection as conn:
-            cursor = conn.cursor()
-            cursor.execute(f"SELECT * FROM {table_name}")
-            return cursor.fetchall()
+        cursor.execute(query)
+        self.connection.commit()
 
+    def create_player_dealer_strategy_table(self):
+        # Bestehende Tabelle löschen
+        self.drop_table("Player_dealer_strategy_table")
+        cursor = self.connection.cursor()
 
-    def close(self):
+        query = """
+            CREATE TABLE Player_dealer_strategy_table AS
+            SELECT 
+                total_value,
+                MAX(CASE WHEN start_card = 1 THEN recommended_action END) AS dealer_Ass,  
+                MAX(CASE WHEN start_card = 2 THEN recommended_action END) AS dealer_2,
+                MAX(CASE WHEN start_card = 3 THEN recommended_action END) AS dealer_3,
+                MAX(CASE WHEN start_card = 4 THEN recommended_action END) AS dealer_4,
+                MAX(CASE WHEN start_card = 5 THEN recommended_action END) AS dealer_5,
+                MAX(CASE WHEN start_card = 6 THEN recommended_action END) AS dealer_6,
+                MAX(CASE WHEN start_card = 7 THEN recommended_action END) AS dealer_7,
+                MAX(CASE WHEN start_card = 8 THEN recommended_action END) AS dealer_8,
+                MAX(CASE WHEN start_card = 9 THEN recommended_action END) AS dealer_9,
+                MAX(CASE WHEN start_card = 10 THEN recommended_action END) AS dealer_10
+            FROM (
+                SELECT 
+                    total_value,
+                    CASE WHEN start_card = 1 THEN 'Ass' ELSE CAST(start_card AS INTEGER) END AS start_card,  -- Ass als Text
+                    MIN(min_hit_stand) AS min_hit_stand,
+                    MAX(max_hit_stand) AS max_hit_stand,
+                    AVG(avg_hit_stand) AS avg_hit_stand,
+                    CASE 
+                        WHEN MIN(min_hit_stand) < 0 AND MAX(max_hit_stand) > 0 THEN 'undecided'
+                        WHEN AVG(avg_hit_stand) >= 0 THEN 'Hit'
+                        ELSE 'Stand'
+                    END AS recommended_action
+                FROM Player_dealer_startcard_overview
+                GROUP BY total_value, start_card
+            ) subquery
+            GROUP BY total_value
+            ORDER BY total_value;
         """
-        Schließt die Verbindung zur Datenbank.
-        """
-        self.connection.close()
+
+        cursor.execute(query)
+        self.connection.commit()
+
