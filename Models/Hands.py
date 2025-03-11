@@ -185,19 +185,26 @@ class Hands:
             win_stand = 0.0
             loss_stand = 1.0 if not is_blackjack else 0.0
             draw_stand = 1.0 if is_blackjack else 0.0
-
             win_hit = win_stand
             loss_hit = loss_stand
             draw_hit = draw_stand
             hit_stand = 0
             action = 'Stand'
+        elif total_value <=6:
+            win_stand = 0.0
+            loss_stand = 0.0
+            draw_stand = 0.0
+            win_hit = win_stand
+            loss_hit = loss_stand
+            draw_hit = draw_stand
+            hit_stand = 0
+            action = 'Hit'
         else:
             dealer_hand_distribution = dealer_hands.just_generate_dealer_hands(dealer_cards[0], deck) if dealer_cards else {}
-
             win_stand, loss_stand, draw_stand = calc.calculate_stand_probabilities(total_value, is_blackjack, dealer_hand_distribution)
             win_hit, loss_hit, draw_hit = calc.calculate_hit_probabilities(dealer_hand_distribution, hit_probabilities)
             hit_stand = (win_hit - loss_hit) - (win_stand - loss_stand)
-            action = 'Stand' if hit_stand <= 0 else 'Hit'
+            action = 'Stand' if hit_stand < 0 else 'Hit'
 
         print(f"Spielerhand: {current_hand}, Dealer Start: {dealer_cards}")
 
