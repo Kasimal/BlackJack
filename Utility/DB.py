@@ -401,19 +401,25 @@ class DatabaseManager:
         query = f"""
             CREATE TABLE Player_dealer_startcard_overview AS
             SELECT 
-                minimum_value AS total_value,
+                total_value,
+                minimum_value,
                 dealer_start AS start_card,
+                CASE 
+                    WHEN total_value = minimum_value THEN 'hard'
+                    ELSE 'soft'
+                END AS hand_type,
                 MIN(hit_stand) AS min_hit_stand,
                 MAX(hit_stand) AS max_hit_stand,
                 AVG(hit_stand) AS avg_hit_stand,
                 CASE 
+                    WHEN MIN(hit_stand) < 0 AND MAX(hit_stand) > 0 THEN 'undecided'
                     WHEN AVG(hit_stand) >= 0 THEN 'hit'
                     ELSE 'stand'
                 END AS recommended_action
             FROM {table_name}
-            WHERE minimum_value = total_value  -- Nur harte Hände
-            AND dealer_start GLOB '[0-9]*'  -- Nur numerische Werte zulassen
-            GROUP BY total_value, start_card;
+            WHERE dealer_start GLOB '[0-9]*'  -- Nur numerische Werte zulassen
+            GROUP BY total_value, minimum_value, start_card
+            ORDER BY hand_type DESC, total_value, start_card;
         """
 
         cursor.execute(query)
@@ -441,7 +447,7 @@ class DatabaseManager:
             FROM (
                 SELECT 
                     total_value,
-                    CASE WHEN start_card = 1 THEN 'Ass' ELSE CAST(start_card AS INTEGER) END AS start_card,  -- Ass als Text
+                    start_card,
                     MIN(min_hit_stand) AS min_hit_stand,
                     MAX(max_hit_stand) AS max_hit_stand,
                     AVG(avg_hit_stand) AS avg_hit_stand,
@@ -451,6 +457,7 @@ class DatabaseManager:
                         ELSE 'Stand'
                     END AS recommended_action
                 FROM Player_dealer_startcard_overview
+                WHERE hand_type = 'hard'
                 GROUP BY total_value, start_card
             ) subquery
             GROUP BY total_value
@@ -459,4 +466,47 @@ class DatabaseManager:
 
         cursor.execute(query)
         self.connection.commit()
+
+    def create_player_dealer_strategy_table_soft(self):
+        # Bestehende Tabelle löschen
+        self.drop_table("Player_dealer_strategy_table_soft")
+        cursor = self.connection.cursor()
+
+        query = """
+            CREATE TABLE Player_dealer_strategy_table_soft AS
+            SELECT 
+                total_value,
+                MAX(CASE WHEN start_card = 1 THEN recommended_action END) AS dealer_Ass,  
+                MAX(CASE WHEN start_card = 2 THEN recommended_action END) AS dealer_2,
+                MAX(CASE WHEN start_card = 3 THEN recommended_action END) AS dealer_3,
+                MAX(CASE WHEN start_card = 4 THEN recommended_action END) AS dealer_4,
+                MAX(CASE WHEN start_card = 5 THEN recommended_action END) AS dealer_5,
+                MAX(CASE WHEN start_card = 6 THEN recommended_action END) AS dealer_6,
+                MAX(CASE WHEN start_card = 7 THEN recommended_action END) AS dealer_7,
+                MAX(CASE WHEN start_card = 8 THEN recommended_action END) AS dealer_8,
+                MAX(CASE WHEN start_card = 9 THEN recommended_action END) AS dealer_9,
+                MAX(CASE WHEN start_card = 10 THEN recommended_action END) AS dealer_10
+            FROM (
+                SELECT 
+                    total_value,
+                    start_card,
+                    MIN(min_hit_stand) AS min_hit_stand,
+                    MAX(max_hit_stand) AS max_hit_stand,
+                    AVG(avg_hit_stand) AS avg_hit_stand,
+                    CASE 
+                        WHEN MIN(min_hit_stand) < 0 AND MAX(max_hit_stand) > 0 THEN 'undecided'
+                        WHEN AVG(avg_hit_stand) >= 0 THEN 'Hit'
+                        ELSE 'Stand'
+                    END AS recommended_action
+                FROM Player_dealer_startcard_overview
+                WHERE hand_type = 'soft'
+                GROUP BY total_value, start_card
+            ) subquery
+            GROUP BY total_value
+            ORDER BY total_value;
+        """
+
+        cursor.execute(query)
+        self.connection.commit()
+
 

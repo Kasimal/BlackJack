@@ -86,6 +86,7 @@ def Strategy_Overview():
     table_name = "Full_player_hands"
     db_manager.create_player_dealer_startcard_overview(table_name)
     db_manager.create_player_dealer_strategy_table()
+    db_manager .create_player_dealer_strategy_table_soft()
     db_manager.close()
 
 
