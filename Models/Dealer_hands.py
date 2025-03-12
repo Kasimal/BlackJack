@@ -1,6 +1,5 @@
 import Utility.Calculations as calc
 
-
 class DealerHands:
     def __init__(self, deck, db_manager=None):
         # Initialisierung der Dealer-spezifischen Eigenschaften

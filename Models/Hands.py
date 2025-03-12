@@ -1,9 +1,7 @@
 from Models.Deck import Deck
 from Models.Dealer_hands import DealerHands
 from Utility.DB import DatabaseManager
-
 import Utility.Calculations as calc
-
 
 class Hands:
     def __init__(self, deck, db_manager):
