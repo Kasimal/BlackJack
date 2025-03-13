@@ -79,13 +79,19 @@ def Full_Hands():
     print(f"Generierung der Dealer-Hände dauerte: {end_time - start_time:.4f} Sekunden")
     db_manager.close()
 
+def EVs():
+    db_path = "Data/blackjack.db"
+    db_manager = DatabaseManager(db_path)
+    table_name = "Full_player_hands"
+    db_manager.calculate_ev_for_hands(table_name)
+
 def Strategy_Overview():
     db_path = "Data/blackjack.db"
     db_manager = DatabaseManager(db_path)
     table_name = "Full_player_hands"
     db_manager.create_player_dealer_startcard_overview(table_name)
     db_manager.create_player_dealer_strategy_table()
-    db_manager .create_player_dealer_strategy_table_soft()
+    db_manager.create_player_dealer_strategy_table_soft()
     db_manager.close()
 
 
@@ -96,4 +102,5 @@ if __name__ == "__main__":
     #Dealer_Hands_in_DB(missing_cards=[1, 1, 1])
     #Dealer_Hands_statistics_from_DB()
     #Full_Hands()
-    Strategy_Overview()
+    EVs()
+    #Strategy_Overview()

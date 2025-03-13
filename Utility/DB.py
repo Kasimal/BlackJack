@@ -425,8 +425,8 @@ class DatabaseManager:
         cursor.execute(query)
         self.connection.commit()
 
+
     def create_player_dealer_strategy_table(self):
-        # Bestehende Tabelle löschen
         self.drop_table("Player_dealer_strategy_table")
         cursor = self.connection.cursor()
 
@@ -434,31 +434,27 @@ class DatabaseManager:
             CREATE TABLE Player_dealer_strategy_table AS
             SELECT 
                 total_value,
-                MAX(CASE WHEN start_card = 1 THEN recommended_action END) AS dealer_Ass,  
-                MAX(CASE WHEN start_card = 2 THEN recommended_action END) AS dealer_2,
-                MAX(CASE WHEN start_card = 3 THEN recommended_action END) AS dealer_3,
-                MAX(CASE WHEN start_card = 4 THEN recommended_action END) AS dealer_4,
-                MAX(CASE WHEN start_card = 5 THEN recommended_action END) AS dealer_5,
-                MAX(CASE WHEN start_card = 6 THEN recommended_action END) AS dealer_6,
-                MAX(CASE WHEN start_card = 7 THEN recommended_action END) AS dealer_7,
-                MAX(CASE WHEN start_card = 8 THEN recommended_action END) AS dealer_8,
-                MAX(CASE WHEN start_card = 9 THEN recommended_action END) AS dealer_9,
-                MAX(CASE WHEN start_card = 10 THEN recommended_action END) AS dealer_10
+                MAX(CASE WHEN start_card = 1 THEN decision END) AS dealer_Ass,
+                MAX(CASE WHEN start_card = 2 THEN decision END) AS dealer_2,
+                MAX(CASE WHEN start_card = 3 THEN decision END) AS dealer_3,
+                MAX(CASE WHEN start_card = 4 THEN decision END) AS dealer_4,
+                MAX(CASE WHEN start_card = 5 THEN decision END) AS dealer_5,
+                MAX(CASE WHEN start_card = 6 THEN decision END) AS dealer_6,
+                MAX(CASE WHEN start_card = 7 THEN decision END) AS dealer_7,
+                MAX(CASE WHEN start_card = 8 THEN decision END) AS dealer_8,
+                MAX(CASE WHEN start_card = 9 THEN decision END) AS dealer_9,
+                MAX(CASE WHEN start_card = 10 THEN decision END) AS dealer_10
             FROM (
                 SELECT 
                     total_value,
                     start_card,
-                    MIN(min_hit_stand) AS min_hit_stand,
-                    MAX(max_hit_stand) AS max_hit_stand,
-                    AVG(avg_hit_stand) AS avg_hit_stand,
                     CASE 
-                        WHEN MIN(min_hit_stand) < 0 AND MAX(max_hit_stand) > 0 THEN 'undecided'
-                        WHEN AVG(avg_hit_stand) >= 0 THEN 'Hit'
+                        WHEN min_hit_stand < 0 AND max_hit_stand > 0 THEN 'undecided'
+                        WHEN avg_hit_stand >= 0 THEN 'Hit'
                         ELSE 'Stand'
-                    END AS recommended_action
+                    END AS decision
                 FROM Player_dealer_startcard_overview
                 WHERE hand_type = 'hard'
-                GROUP BY total_value, start_card
             ) subquery
             GROUP BY total_value
             ORDER BY total_value;
@@ -468,7 +464,6 @@ class DatabaseManager:
         self.connection.commit()
 
     def create_player_dealer_strategy_table_soft(self):
-        # Bestehende Tabelle löschen
         self.drop_table("Player_dealer_strategy_table_soft")
         cursor = self.connection.cursor()
 
@@ -476,31 +471,27 @@ class DatabaseManager:
             CREATE TABLE Player_dealer_strategy_table_soft AS
             SELECT 
                 total_value,
-                MAX(CASE WHEN start_card = 1 THEN recommended_action END) AS dealer_Ass,  
-                MAX(CASE WHEN start_card = 2 THEN recommended_action END) AS dealer_2,
-                MAX(CASE WHEN start_card = 3 THEN recommended_action END) AS dealer_3,
-                MAX(CASE WHEN start_card = 4 THEN recommended_action END) AS dealer_4,
-                MAX(CASE WHEN start_card = 5 THEN recommended_action END) AS dealer_5,
-                MAX(CASE WHEN start_card = 6 THEN recommended_action END) AS dealer_6,
-                MAX(CASE WHEN start_card = 7 THEN recommended_action END) AS dealer_7,
-                MAX(CASE WHEN start_card = 8 THEN recommended_action END) AS dealer_8,
-                MAX(CASE WHEN start_card = 9 THEN recommended_action END) AS dealer_9,
-                MAX(CASE WHEN start_card = 10 THEN recommended_action END) AS dealer_10
+                MAX(CASE WHEN start_card = 1 THEN decision END) AS dealer_Ass,
+                MAX(CASE WHEN start_card = 2 THEN decision END) AS dealer_2,
+                MAX(CASE WHEN start_card = 3 THEN decision END) AS dealer_3,
+                MAX(CASE WHEN start_card = 4 THEN decision END) AS dealer_4,
+                MAX(CASE WHEN start_card = 5 THEN decision END) AS dealer_5,
+                MAX(CASE WHEN start_card = 6 THEN decision END) AS dealer_6,
+                MAX(CASE WHEN start_card = 7 THEN decision END) AS dealer_7,
+                MAX(CASE WHEN start_card = 8 THEN decision END) AS dealer_8,
+                MAX(CASE WHEN start_card = 9 THEN decision END) AS dealer_9,
+                MAX(CASE WHEN start_card = 10 THEN decision END) AS dealer_10
             FROM (
                 SELECT 
                     total_value,
                     start_card,
-                    MIN(min_hit_stand) AS min_hit_stand,
-                    MAX(max_hit_stand) AS max_hit_stand,
-                    AVG(avg_hit_stand) AS avg_hit_stand,
                     CASE 
-                        WHEN MIN(min_hit_stand) < 0 AND MAX(max_hit_stand) > 0 THEN 'undecided'
-                        WHEN AVG(avg_hit_stand) >= 0 THEN 'Hit'
+                        WHEN min_hit_stand < 0 AND max_hit_stand > 0 THEN 'undecided'
+                        WHEN avg_hit_stand >= 0 THEN 'Hit'
                         ELSE 'Stand'
-                    END AS recommended_action
+                    END AS decision
                 FROM Player_dealer_startcard_overview
                 WHERE hand_type = 'soft'
-                GROUP BY total_value, start_card
             ) subquery
             GROUP BY total_value
             ORDER BY total_value;
@@ -508,5 +499,74 @@ class DatabaseManager:
 
         cursor.execute(query)
         self.connection.commit()
+
+    def calculate_ev_for_hands(self, table_name):
+        cursor = self.connection.cursor()
+
+        # Spalte 'ev' hinzufügen, falls sie nicht existiert
+        cursor.execute(f"PRAGMA table_info({table_name})")
+        existing_columns = {row[1] for row in cursor.fetchall()}
+        if "ev" not in existing_columns:
+            cursor.execute("ALTER TABLE Full_player_hands ADD COLUMN ev FLOAT")
+
+        # EV für Stand-Hände direkt berechnen
+        cursor.execute("""
+                UPDATE Full_player_hands
+                SET ev = win_stand - loss_stand
+                WHERE action = 'Stand'
+            """)
+
+        # EV für Stand-Hände direkt berechnen
+        cursor.execute(f"""
+                UPDATE {table_name}
+                SET ev = win_stand - loss_stand
+                WHERE action = 'Stand'
+            """)
+
+        # EV für Hit-Hände rekursiv berechnen
+        def compute_ev(total_value, dealer_start):
+            cursor.execute(f"""
+                    SELECT ev FROM {table_name}
+                    WHERE total_value = ? AND dealer_start = ?
+                """, (total_value, dealer_start))
+            result = cursor.fetchone()
+            if result and result[0] is not None:
+                return result[0]  # Falls EV bereits berechnet wurde, direkt zurückgeben
+
+            cursor.execute(f"""
+                    SELECT win_hit, loss_hit FROM {table_name}
+                    WHERE total_value = ? AND dealer_start = ?
+                """, (total_value, dealer_start))
+            row = cursor.fetchone()
+            if not row:
+                return 0  # Falls Hand nicht existiert
+
+            win_hit, loss_hit = row
+            expected_value = win_hit - loss_hit  # Basis-EV
+
+            # Durchschnitt der EVs der möglichen Folge-Hände berechnen
+            total_follow_ev = 0
+            for new_card in range(1, 11):  # 10 mögliche Karten ziehen
+                new_value = total_value + new_card
+                total_follow_ev += compute_ev(new_value, dealer_start) / 10
+
+            expected_value += total_follow_ev  # EV mit möglicher neuer Hand verrechnen
+
+            cursor.execute(f"""
+                    UPDATE {table_name}
+                    SET ev = ?
+                    WHERE total_value = ? AND dealer_start = ?
+                """, (expected_value, total_value, dealer_start))
+
+            return expected_value
+
+        # Alle Hände mit "Hit" durchgehen
+        cursor.execute(f"SELECT DISTINCT total_value, dealer_start FROM {table_name} WHERE action = 'Hit'")
+        for total_value, dealer_start in cursor.fetchall():
+            compute_ev(total_value, dealer_start)
+
+        self.connection.commit()
+        self.connection.close()
+
 
 
