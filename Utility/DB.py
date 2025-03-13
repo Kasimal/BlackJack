@@ -213,7 +213,7 @@ class DatabaseManager:
     def inspect_table_columns(self, table_name):
         """Inspects the columns of a given table."""
         with sqlite3.connect(self.db_path) as conn:
-            cursor = self.connection.cursor()
+            cursor = conn.cursor()
             cursor.execute(f"PRAGMA table_info({table_name});")
             columns = cursor.fetchall()
 
