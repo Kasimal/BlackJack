@@ -2,8 +2,6 @@ from collections import Counter
 from Models.Deck import Deck
 import math
 
-
-
 def hand_frequency_with_order(current_hand, original_frequencies, cards_to_ignore=1):
     """
     Berechnet die Häufigkeit einer Hand unter Berücksichtigung der Reihenfolge,
@@ -108,6 +106,52 @@ def bust_probability(current_hand, deck=None):
 
     # Berechne die Wahrscheinlichkeit
     return bust_card_count / total_cards_left
+
+
+def card_draw_probabilities(player_hand, dealer_start, deck=None):
+    """
+    Berechnet die Wahrscheinlichkeiten für jede mögliche nachziehbare Karte.
+
+    Args:
+        deck (Deck): Deck-Instanz mit Kartenhäufigkeiten
+        player_hand (list): Spielerhand als Liste von Kartenwerten
+        dealer_start (int/str): Dealer-Startkarte (muss zu 1-10 konvertierbar sein)
+
+    Returns:
+        dict: Ziehwahrscheinlichkeiten pro Karte (1–10)
+
+    Raises:
+        ValueError: Bei ungültigem dealer_start
+    """
+    # Konvertierung zu Integer mit Fehlerbehandlung
+    try:
+        dealer_start = int(dealer_start)
+    except (TypeError, ValueError) as e:
+        raise ValueError(
+            f"dealer_start muss zu 1-10 konvertierbar sein. Ungültiger Wert: {dealer_start}"
+        ) from e
+
+    # Gültigkeitsprüfung
+    if not 1 <= dealer_start <= 10:
+        raise ValueError(f"dealer_start muss zwischen 1-10 liegen. Erhalten: {dealer_start}")
+
+    if deck is None:
+        deck = Deck()
+
+    # Deck-Kopieren und Karten abziehen
+    remaining_deck = deck.card_frequencies.copy()
+
+    for card in player_hand:
+        remaining_deck[card] -= 1
+
+    remaining_deck[dealer_start] -= 1
+
+    # Wahrscheinlichkeitsberechnung
+    total = max(deck.total_cards() - len(player_hand) - 1, 0)
+    return {
+        card: count / total if total > 0 else 0
+        for card, count in remaining_deck.items()
+    }
 
 
 def probability_distribution(current_hand, deck=None, dealer_cards=None):

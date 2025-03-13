@@ -3,6 +3,7 @@ from Models.Deck import Deck
 from Models.Hands import Hands
 from Models.Dealer_hands import DealerHands
 from Utility.DB import DatabaseManager
+import Utility.Calculations as calc
 
 
 def All_Hands_in_DB(missing_cards=None):
@@ -102,5 +103,15 @@ if __name__ == "__main__":
     #Dealer_Hands_in_DB(missing_cards=[1, 1, 1])
     #Dealer_Hands_statistics_from_DB()
     #Full_Hands()
-    EVs()
+    #EVs()
     #Strategy_Overview()
+    # Gültige Werte
+    probabilities = calc.card_draw_probabilities([10, 5], 7)  # Int direkt
+    print(f"Berechnete Wahrscheinlichkeiten: {probabilities}")
+    probabilities = calc.card_draw_probabilities([2, 3], "9")  # String-Konvertierung
+    print(f"Berechnete Wahrscheinlichkeiten: {probabilities}")
+
+    # Löst Fehler aus
+    #calc.card_draw_probabilities([], "Blackjack")  # Konvertierung fehlgeschlagen
+    #calc.card_draw_probabilities([], 12)  # Außerhalb 1-10
+
