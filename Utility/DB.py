@@ -15,7 +15,6 @@ class DatabaseManager:
         self.connection = sqlite3.connect(self.db_path)
         self._create_stats_table()
 
-
     def drop_table(self, table_name):
         """
         Löscht die angegebene Tabelle aus der Datenbank, falls sie existiert.
@@ -30,7 +29,6 @@ class DatabaseManager:
             ''')
             print(f"Tabelle '{table_name}' wurde gelöscht (falls sie existierte).")
 
-
     def fetch_all_hands(self, table_name):
         """
         Ruft alle gespeicherten Hände aus der Datenbank ab.
@@ -43,13 +41,11 @@ class DatabaseManager:
             cursor.execute(f"SELECT * FROM {table_name}")
             return cursor.fetchall()
 
-
     def close(self):
         """
         Schließt die Verbindung zur Datenbank.
         """
         self.connection.close()
-
 
     def create_table_hands(self, table_name):
         """
@@ -86,7 +82,6 @@ class DatabaseManager:
             # Ausführung der SQL-Anweisung
             cursor.execute(sql)
             print(f"Tabelle '{table_name}' wurde erfolgreich erstellt.")
-
 
     def create_table_full_player_hands(self, table_name="Full_player_hands"):
         """
@@ -141,7 +136,6 @@ class DatabaseManager:
             cursor.execute(sql)
             print(f"Tabelle '{table_name}' wurde erfolgreich erstellt.")
 
-
     def _create_stats_table(self):
         """Erstellt die Tabelle für die Dealerhand-Statistiken mit relativen Häufigkeiten, falls sie nicht existiert."""
         cursor = self.connection.cursor()
@@ -158,7 +152,6 @@ class DatabaseManager:
             )
         """)
         self.connection.commit()
-
 
     def update_dealer_hand_statistics(self):
         """Berechnet die relativen Häufigkeiten der Dealerhände nach Startkarte."""
@@ -209,7 +202,6 @@ class DatabaseManager:
 
         self.connection.commit()
 
-
     def inspect_table_columns(self, table_name):
         """Inspects the columns of a given table."""
         with sqlite3.connect(self.db_path) as conn:
@@ -221,7 +213,6 @@ class DatabaseManager:
             for col in columns:
                 print(
                     f"Spalten-ID: {col[0]}, Name: {col[1]}, Typ: {col[2]}, Not Null: {col[3]}, Default: {col[4]}, Primary Key: {col[5]}")
-
 
     def save_hands(self, table_name, hands):
         """
@@ -366,7 +357,6 @@ class DatabaseManager:
             count = cursor.fetchone()[0]
             print(f"{count} Hände sind in der Datenbank gespeichert.")
 
-
     def get_dealer_hand_statistics(self):
         """Gibt eine Auswertung der Dealerhände nach Startkarte zurück."""
         cursor = self.connection.cursor()
@@ -424,7 +414,6 @@ class DatabaseManager:
 
         cursor.execute(query)
         self.connection.commit()
-
 
     def create_player_dealer_strategy_table(self):
         self.drop_table("Player_dealer_strategy_table")
