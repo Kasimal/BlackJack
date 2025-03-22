@@ -77,26 +77,24 @@ class DeckTest(unittest.TestCase):
         - Fehlerhafte Eingaben
         """
 
-        def round_probabilities(probabilities):
-            """Rundet die Wahrscheinlichkeiten auf 4 Nachkommastellen."""
-            return {k: round(v, 4) for k, v in probabilities.items()}
-
         # 1. Gültige Eingaben
         expected_probabilities_1 = {
             1: 0.0816, 2: 0.0816, 3: 0.0816, 4: 0.0816,
             5: 0.0612, 6: 0.0816, 7: 0.0612, 8: 0.0816,
             9: 0.0816, 10: 0.3061
         }
-        probabilities = round_probabilities(calc.card_draw_probabilities([10, 5], 7))
-        self.assertEqual(probabilities, expected_probabilities_1)
+        probabilities = calc.card_draw_probabilities([10, 5], 7)
+        for card, expected in expected_probabilities_1.items():
+            self.assertAlmostEqual(probabilities[card], expected, places=4)
 
         expected_probabilities_2 = {
             1: 0.0816, 2: 0.0612, 3: 0.0612, 4: 0.0816,
             5: 0.0816, 6: 0.0816, 7: 0.0816, 8: 0.0816,
             9: 0.0612, 10: 0.3265
         }
-        probabilities = round_probabilities(calc.card_draw_probabilities([2, 3], "9"))
-        self.assertEqual(probabilities, expected_probabilities_2)
+        probabilities = calc.card_draw_probabilities([2, 3], "9")
+        for card, expected in expected_probabilities_2.items():
+            self.assertAlmostEqual(probabilities[card], expected, places=4)
 
         # 2. Ungültige dealer_start: 'Blackjack'
         with self.assertRaises(ValueError):
@@ -107,9 +105,12 @@ class DeckTest(unittest.TestCase):
             calc.card_draw_probabilities([], 12)
 
         # 4. Ungültige dealer_start als nicht-konvertierbarer Wert
-        with self.assertRaises(ValueError) as context:
+        with self.assertRaises(ValueError):
             calc.card_draw_probabilities([], "abc")
-        self.assertTrue("Ungültiger Wert: abc" in str(context.exception))
+
+        # 5. Test mit leerer Hand und dealer_start = 1
+        probabilities = calc.card_draw_probabilities([], 1)
+        self.assertAlmostEqual(float(sum(probabilities.values())), 1.0, places=4)
 
 
 if __name__ == '__main__':

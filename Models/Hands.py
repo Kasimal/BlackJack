@@ -225,7 +225,8 @@ class Hands:
             "win_stand": win_stand,
             "loss_stand": loss_stand,
             "hit_stand": hit_stand,
-            "action": action
+            "action": action,
+            "ev": 0.0   # wird erst später gefüllt
         })
 
         # Falls der Dealer einen Blackjack hat und es eine Starthand ist, keine weiteren Karten hinzufügen

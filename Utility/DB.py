@@ -1,5 +1,6 @@
 import sqlite3
 from Models.Deck import Deck
+import Utility.Calculations as calc
 
 class DatabaseManager:
     def __init__(self, db_path="Data/Blackjack.db"):
@@ -127,7 +128,8 @@ class DatabaseManager:
                     win_stand FLOAT,                           -- Wahrscheinlichkeit zu gewinnen bei Stand
                     loss_stand FLOAT,                          -- Wahrscheinlichkeit zu verlieren bei Stand
                     hit_stand FLOAT,                           -- Differenz Hit-chance und Stand-chance  
-                    action VARCHAR                             -- Empfohlene Aktion, 'hit', 'stand' eventuell auch 'split' oder 'double' 
+                    action VARCHAR,                            -- Empfohlene Aktion, 'hit', 'stand' eventuell auch 'split' oder 'double'
+                    ev FLOAT                                   -- Erwartungswert 
                 )
             '''
             print(f"Volle Spieler-Hände-Tabelle '{table_name}' wird erstellt.")
@@ -499,63 +501,62 @@ class DatabaseManager:
             cursor.execute("ALTER TABLE Full_player_hands ADD COLUMN ev FLOAT")
 
         # EV für Stand-Hände direkt berechnen
-        cursor.execute("""
-                UPDATE Full_player_hands
-                SET ev = win_stand - loss_stand
-                WHERE action = 'Stand'
-            """)
-
-        # EV für Stand-Hände direkt berechnen
         cursor.execute(f"""
                 UPDATE {table_name}
                 SET ev = win_stand - loss_stand
                 WHERE action = 'Stand'
             """)
 
-        # EV für Hit-Hände rekursiv berechnen
-        def compute_ev(total_value, dealer_start):
-            cursor.execute(f"""
-                    SELECT ev FROM {table_name}
-                    WHERE total_value = ? AND dealer_start = ?
-                """, (total_value, dealer_start))
-            result = cursor.fetchone()
-            if result and result[0] is not None:
-                return result[0]  # Falls EV bereits berechnet wurde, direkt zurückgeben
+        #EV für Blackjacks direkt berechnen
+        cursor.execute(f"""
+                UPDATE {table_name}
+                SET ev = -1
+                WHERE dealer_start = 'Blackjack'
+            """)
+        cursor.execute(f"""
+                UPDATE {table_name}
+                SET ev = 1.5
+                WHERE is_blackjack = 1
+            """)
+        cursor.execute(f"""
+                UPDATE {table_name}
+                SET ev = 0
+                WHERE is_blackjack = 1 and dealer_start = 'Blackjack'
+            """)
 
-            cursor.execute(f"""
-                    SELECT win_hit, loss_hit FROM {table_name}
-                    WHERE total_value = ? AND dealer_start = ?
-                """, (total_value, dealer_start))
-            row = cursor.fetchone()
-            if not row:
-                return 0  # Falls Hand nicht existiert
+        # Alle Hände mit 'Hit' Aktion holen
+        cursor.execute("""
+                SELECT hand_id, minimum_value, dealer_start, ev, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10
+                FROM Full_player_hands
+                WHERE action = 'HIT'
+            """)
+        hands = cursor.fetchall()
 
-            win_hit, loss_hit = row
-            expected_value = win_hit - loss_hit  # Basis-EV
+        # Sortiere nach der Kartenanzahl (längste Hände zuerst)
+        hands.sort(key=lambda x: sum(x[2:]), reverse=True)
 
-            # Durchschnitt der EVs der möglichen Folge-Hände berechnen
-            total_follow_ev = 0
-            for new_card in range(1, 11):  # 10 mögliche Karten ziehen
-                new_value = total_value + new_card
-                total_follow_ev += compute_ev(new_value, dealer_start) / 10
+        for hand in hands:
+            hand_id, minimum_value, dealer_start, ev, *card_counts = hand
 
-            expected_value += total_follow_ev  # EV mit möglicher neuer Hand verrechnen
+            # Erstelle die Kartenhand basierend auf Kartenwert und Anzahl
+            hand_cards = []
+            for value, count in enumerate(card_counts, start=1):
+                hand_cards.extend([value] * count)
 
-            cursor.execute(f"""
-                    UPDATE {table_name}
+            # Wahrscheinlichkeiten für jede mögliche Karte bestimmen
+            probabilities = calc.card_draw_probabilities(hand_cards, dealer_start)
+
+            # Erwartungswert berechnen
+            expected_value = sum(
+                probabilities[card] * ev for card
+                in range(1, 11))
+
+            # Erwartungswert in die Datenbank schreiben
+            cursor.execute("""
+                    UPDATE Full_player_hands
                     SET ev = ?
-                    WHERE total_value = ? AND dealer_start = ?
-                """, (expected_value, total_value, dealer_start))
-
-            return expected_value
-
-        # Alle Hände mit "Hit" durchgehen
-        cursor.execute(f"SELECT DISTINCT total_value, dealer_start FROM {table_name} WHERE action = 'Hit'")
-        for total_value, dealer_start in cursor.fetchall():
-            compute_ev(total_value, dealer_start)
+                    WHERE hand_id = ?
+                """, (expected_value, hand_id))
 
         self.connection.commit()
         self.connection.close()
-
-
-
