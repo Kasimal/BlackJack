@@ -492,71 +492,96 @@ class DatabaseManager:
         self.connection.commit()
 
     def calculate_ev_for_hands(self, table_name):
-        cursor = self.connection.cursor()
+        try:
+            cursor = self.connection.cursor()
 
-        # Spalte 'ev' hinzufügen, falls sie nicht existiert
-        cursor.execute(f"PRAGMA table_info({table_name})")
-        existing_columns = {row[1] for row in cursor.fetchall()}
-        if "ev" not in existing_columns:
-            cursor.execute("ALTER TABLE Full_player_hands ADD COLUMN ev FLOAT")
+            # Spalte 'ev' hinzufügen, falls nicht vorhanden
+            cursor.execute(f"PRAGMA table_info({table_name})")
+            if "ev" not in {row[1] for row in cursor.fetchall()}:
+                cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN ev FLOAT")
 
-        # EV für Stand-Hände direkt berechnen
-        cursor.execute(f"""
+            # Einfache Fälle direkt berechnen
+            cursor.execute(f"""
                 UPDATE {table_name}
                 SET ev = win_stand - loss_stand
                 WHERE action = 'Stand'
             """)
 
-        #EV für Blackjacks direkt berechnen
-        cursor.execute(f"""
+            cursor.execute(f"""
                 UPDATE {table_name}
-                SET ev = -1
-                WHERE dealer_start = 'Blackjack'
-            """)
-        cursor.execute(f"""
-                UPDATE {table_name}
-                SET ev = 1.5
-                WHERE is_blackjack = 1
-            """)
-        cursor.execute(f"""
-                UPDATE {table_name}
-                SET ev = 0
-                WHERE is_blackjack = 1 and dealer_start = 'Blackjack'
+                SET ev = 
+                    CASE
+                        WHEN dealer_start = 'Blackjack' AND is_blackjack = 1 THEN 0
+                        WHEN is_blackjack = 1 THEN 1.5
+                        WHEN dealer_start = 'Blackjack' THEN -1
+                    END
+                WHERE dealer_start = 'Blackjack' OR is_blackjack = 1
             """)
 
-        # Alle Hände mit 'Hit' Aktion holen
-        cursor.execute("""
-                SELECT hand_id, minimum_value, dealer_start, ev, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10
-                FROM Full_player_hands
+            # Cache aller Hände aufbauen
+            cursor.execute(f"""
+                SELECT c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,
+                       minimum_value, dealer_start, ev
+                FROM {table_name}
+            """)
+            hand_cache = {
+                (c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, min_val, dealer): ev
+                for c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, min_val, dealer, ev in cursor.fetchall()
+            }
+
+            # Hände mit 'Hit' verarbeiten (sortiert nach Kartenanzahl)
+            cursor.execute(f"""
+                SELECT hand_id, minimum_value, dealer_start,
+                       c1,c2,c3,c4,c5,c6,c7,c8,c9,c10
+                FROM {table_name}
                 WHERE action = 'HIT'
+                ORDER BY (c1+c2+c3+c4+c5+c6+c7+c8+c9+c10) DESC
             """)
-        hands = cursor.fetchall()
 
-        # Sortiere nach der Kartenanzahl (längste Hände zuerst)
-        hands.sort(key=lambda x: sum(x[2:]), reverse=True)
+            for hand in cursor.fetchall():
+                hand_id, min_value, dealer_start, *card_counts = hand
+                hand_cards = []
+                for value, count in enumerate(card_counts, start=1):
+                    hand_cards.extend([value] * count)
 
-        for hand in hands:
-            hand_id, minimum_value, dealer_start, ev, *card_counts = hand
+                probabilities = calc.card_draw_probabilities(hand_cards, dealer_start)
+                expected_value = 0.0
 
-            # Erstelle die Kartenhand basierend auf Kartenwert und Anzahl
-            hand_cards = []
-            for value, count in enumerate(card_counts, start=1):
-                hand_cards.extend([value] * count)
+                for card in range(1, 11):
+                    card_prob = probabilities[card]
+                    new_min = min_value + card  # Neuer minimaler Wert
 
-            # Wahrscheinlichkeiten für jede mögliche Karte bestimmen
-            probabilities = calc.card_draw_probabilities(hand_cards, dealer_start)
+                    if new_min > 21:  # Bust-Fall direkt behandeln
+                        expected_value += card_prob * (-1)
+                        continue
 
-            # Erwartungswert berechnen
-            expected_value = sum(
-                probabilities[card] * ev for card
-                in range(1, 11))
+                    # Neue Kartenverteilung erstellen
+                    new_counts = list(card_counts)
+                    new_counts[card - 1] += 1
+                    cache_key = tuple(int(count) for count in new_counts[:10]) + (int(new_min),) + (
+                        (dealer_start,) if isinstance(dealer_start, str) else dealer_start)
 
-            # Erwartungswert in die Datenbank schreiben
-            cursor.execute("""
-                    UPDATE Full_player_hands
+                    if cache_key in hand_cache:
+                        next_ev = hand_cache[cache_key]
+                    else:
+                        print(f"Warnung: Hand {cache_key} nicht gefunden (min={new_min})")
+                        next_ev = -1 if new_min > 21 else 0  # Fallback für fehlende Daten
+
+                    expected_value += card_prob * next_ev
+
+                # EV in die Datenbank schreiben
+                cursor.execute(f"""
+                    UPDATE {table_name}
                     SET ev = ?
                     WHERE hand_id = ?
                 """, (expected_value, hand_id))
 
-        self.connection.commit()
-        self.connection.close()
+            self.connection.commit()
+
+        except sqlite3.Error as e:
+            print(f"Datenbankfehler: {e}")
+            self.connection.rollback()
+        finally:
+            if self.connection:
+                self.connection.close()
+
