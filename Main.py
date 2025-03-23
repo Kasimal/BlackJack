@@ -63,6 +63,7 @@ def Dealer_Hands_in_DB(missing_cards=None):
 def Dealer_Hands_statistics_from_DB():
     db_path = "Data/blackjack.db"
     db_manager = DatabaseManager(db_path)
+    db_manager.create_stats_table()
     db_manager.update_dealer_hand_statistics()
 
 def Full_Hands():
@@ -84,15 +85,16 @@ def EVs():
     db_path = "Data/blackjack.db"
     db_manager = DatabaseManager(db_path)
     table_name = "Full_player_hands"
-    db_manager.calculate_ev_for_hands(table_name)
+    db_manager.get_ev_for_hands(table_name)
 
 def Strategy_Overview():
     db_path = "Data/blackjack.db"
     db_manager = DatabaseManager(db_path)
     table_name = "Full_player_hands"
     db_manager.create_player_dealer_startcard_overview(table_name)
-    db_manager.create_player_dealer_strategy_table()
-    db_manager.create_player_dealer_strategy_table_soft()
+    db_manager.create_and_fill_player_dealer_strategy_table()
+    db_manager.create_and_fill_player_dealer_strategy_table_soft()
+    db_manager.create_and_fill_double_overview()
     db_manager.close()
 
 
@@ -102,8 +104,8 @@ if __name__ == "__main__":
     #Dealer_Hands_in_DB()
     #Dealer_Hands_in_DB(missing_cards=[1, 1, 1])
     #Dealer_Hands_statistics_from_DB()
-    #Full_Hands()
+    Full_Hands()
     EVs()
-    #Strategy_Overview()
+    Strategy_Overview()
 
 

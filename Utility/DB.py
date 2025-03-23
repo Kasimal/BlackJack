@@ -14,7 +14,6 @@ class DatabaseManager:
         self.db_path = db_path
         self.card_columns = [f"c{card}" for card in self.deck.get_available_cards()]
         self.connection = sqlite3.connect(self.db_path)
-        self._create_stats_table()
 
     def drop_table(self, table_name):
         """
@@ -138,7 +137,7 @@ class DatabaseManager:
             cursor.execute(sql)
             print(f"Tabelle '{table_name}' wurde erfolgreich erstellt.")
 
-    def _create_stats_table(self):
+    def create_stats_table(self):
         """Erstellt die Tabelle für die Dealerhand-Statistiken mit relativen Häufigkeiten, falls sie nicht existiert."""
         cursor = self.connection.cursor()
         cursor.execute("""
@@ -292,7 +291,7 @@ class DatabaseManager:
                       "prob_16", "prob_17", "prob_18", "prob_19", "prob_20", "prob_21",
                       "prob_blackjack", "prob_bust",
                       "win_hit", "loss_hit", "win_stand", "loss_stand",
-                      "hit_stand", "action"
+                      "hit_stand", "action", "ev"
                   ]
 
         # SQL-Anweisung vorbereiten
@@ -335,6 +334,7 @@ class DatabaseManager:
                 hand_data.get("loss_stand", 0),
                 hand_data.get("hit_stand"),
                 hand_data.get("action"),
+                hand_data.get("ev", 0)
             ])
 
         # Datenbank-Insert in einer einzigen Transaktion
@@ -417,81 +417,7 @@ class DatabaseManager:
         cursor.execute(query)
         self.connection.commit()
 
-    def create_player_dealer_strategy_table(self):
-        self.drop_table("Player_dealer_strategy_table")
-        cursor = self.connection.cursor()
-
-        query = """
-            CREATE TABLE Player_dealer_strategy_table AS
-            SELECT 
-                total_value,
-                MAX(CASE WHEN start_card = 1 THEN decision END) AS dealer_Ass,
-                MAX(CASE WHEN start_card = 2 THEN decision END) AS dealer_2,
-                MAX(CASE WHEN start_card = 3 THEN decision END) AS dealer_3,
-                MAX(CASE WHEN start_card = 4 THEN decision END) AS dealer_4,
-                MAX(CASE WHEN start_card = 5 THEN decision END) AS dealer_5,
-                MAX(CASE WHEN start_card = 6 THEN decision END) AS dealer_6,
-                MAX(CASE WHEN start_card = 7 THEN decision END) AS dealer_7,
-                MAX(CASE WHEN start_card = 8 THEN decision END) AS dealer_8,
-                MAX(CASE WHEN start_card = 9 THEN decision END) AS dealer_9,
-                MAX(CASE WHEN start_card = 10 THEN decision END) AS dealer_10
-            FROM (
-                SELECT 
-                    total_value,
-                    start_card,
-                    CASE 
-                        WHEN min_hit_stand < 0 AND max_hit_stand > 0 THEN 'undecided'
-                        WHEN avg_hit_stand >= 0 THEN 'Hit'
-                        ELSE 'Stand'
-                    END AS decision
-                FROM Player_dealer_startcard_overview
-                WHERE hand_type = 'hard'
-            ) subquery
-            GROUP BY total_value
-            ORDER BY total_value;
-        """
-
-        cursor.execute(query)
-        self.connection.commit()
-
-    def create_player_dealer_strategy_table_soft(self):
-        self.drop_table("Player_dealer_strategy_table_soft")
-        cursor = self.connection.cursor()
-
-        query = """
-            CREATE TABLE Player_dealer_strategy_table_soft AS
-            SELECT 
-                total_value,
-                MAX(CASE WHEN start_card = 1 THEN decision END) AS dealer_Ass,
-                MAX(CASE WHEN start_card = 2 THEN decision END) AS dealer_2,
-                MAX(CASE WHEN start_card = 3 THEN decision END) AS dealer_3,
-                MAX(CASE WHEN start_card = 4 THEN decision END) AS dealer_4,
-                MAX(CASE WHEN start_card = 5 THEN decision END) AS dealer_5,
-                MAX(CASE WHEN start_card = 6 THEN decision END) AS dealer_6,
-                MAX(CASE WHEN start_card = 7 THEN decision END) AS dealer_7,
-                MAX(CASE WHEN start_card = 8 THEN decision END) AS dealer_8,
-                MAX(CASE WHEN start_card = 9 THEN decision END) AS dealer_9,
-                MAX(CASE WHEN start_card = 10 THEN decision END) AS dealer_10
-            FROM (
-                SELECT 
-                    total_value,
-                    start_card,
-                    CASE 
-                        WHEN min_hit_stand < 0 AND max_hit_stand > 0 THEN 'undecided'
-                        WHEN avg_hit_stand >= 0 THEN 'Hit'
-                        ELSE 'Stand'
-                    END AS decision
-                FROM Player_dealer_startcard_overview
-                WHERE hand_type = 'soft'
-            ) subquery
-            GROUP BY total_value
-            ORDER BY total_value;
-        """
-
-        cursor.execute(query)
-        self.connection.commit()
-
-    def calculate_ev_for_hands(self, table_name):
+    def get_ev_for_hands(self, table_name):
         try:
             cursor = self.connection.cursor()
 
@@ -585,3 +511,138 @@ class DatabaseManager:
             if self.connection:
                 self.connection.close()
 
+    def create_and_fill_player_dealer_strategy_table(self):
+        self.drop_table("Player_dealer_strategy_table")
+        cursor = self.connection.cursor()
+
+        query = """
+            CREATE TABLE Player_dealer_strategy_table AS
+            SELECT 
+                total_value,
+                MAX(CASE WHEN start_card = 1 THEN decision END) AS dealer_Ass,
+                MAX(CASE WHEN start_card = 2 THEN decision END) AS dealer_2,
+                MAX(CASE WHEN start_card = 3 THEN decision END) AS dealer_3,
+                MAX(CASE WHEN start_card = 4 THEN decision END) AS dealer_4,
+                MAX(CASE WHEN start_card = 5 THEN decision END) AS dealer_5,
+                MAX(CASE WHEN start_card = 6 THEN decision END) AS dealer_6,
+                MAX(CASE WHEN start_card = 7 THEN decision END) AS dealer_7,
+                MAX(CASE WHEN start_card = 8 THEN decision END) AS dealer_8,
+                MAX(CASE WHEN start_card = 9 THEN decision END) AS dealer_9,
+                MAX(CASE WHEN start_card = 10 THEN decision END) AS dealer_10
+            FROM (
+                SELECT 
+                    total_value,
+                    start_card,
+                    CASE 
+                        WHEN min_hit_stand < 0 AND max_hit_stand > 0 THEN 'undecided'
+                        WHEN avg_hit_stand >= 0 THEN 'Hit'
+                        ELSE 'Stand'
+                    END AS decision
+                FROM Player_dealer_startcard_overview
+                WHERE hand_type = 'hard'
+            ) subquery
+            GROUP BY total_value
+            ORDER BY total_value;
+        """
+
+        cursor.execute(query)
+        self.connection.commit()
+
+    def create_and_fill_player_dealer_strategy_table_soft(self):
+        self.drop_table("Player_dealer_strategy_table_soft")
+        cursor = self.connection.cursor()
+
+        query = """
+            CREATE TABLE Player_dealer_strategy_table_soft AS
+            SELECT 
+                total_value,
+                MAX(CASE WHEN start_card = 1 THEN decision END) AS dealer_Ass,
+                MAX(CASE WHEN start_card = 2 THEN decision END) AS dealer_2,
+                MAX(CASE WHEN start_card = 3 THEN decision END) AS dealer_3,
+                MAX(CASE WHEN start_card = 4 THEN decision END) AS dealer_4,
+                MAX(CASE WHEN start_card = 5 THEN decision END) AS dealer_5,
+                MAX(CASE WHEN start_card = 6 THEN decision END) AS dealer_6,
+                MAX(CASE WHEN start_card = 7 THEN decision END) AS dealer_7,
+                MAX(CASE WHEN start_card = 8 THEN decision END) AS dealer_8,
+                MAX(CASE WHEN start_card = 9 THEN decision END) AS dealer_9,
+                MAX(CASE WHEN start_card = 10 THEN decision END) AS dealer_10
+            FROM (
+                SELECT 
+                    total_value,
+                    start_card,
+                    CASE 
+                        WHEN min_hit_stand < 0 AND max_hit_stand > 0 THEN 'undecided'
+                        WHEN avg_hit_stand >= 0 THEN 'Hit'
+                        ELSE 'Stand'
+                    END AS decision
+                FROM Player_dealer_startcard_overview
+                WHERE hand_type = 'soft'
+            ) subquery
+            GROUP BY total_value
+            ORDER BY total_value;
+        """
+
+        cursor.execute(query)
+        self.connection.commit()
+
+    def create_and_fill_double_overview(self):
+        """
+        Erstellt die Tabelle 'Double_overview' und füllt sie basierend auf den Daten in 'Full_player_hands'.
+        Double gilt, wenn (win_hit - loss_hit) * 2 größer ist als ev. Andernfalls wird die ursprüngliche Aktion übernommen.
+
+        Die Tabelle enthält jede einzelne Starthand als Zeile und die Dealer-Startkarte als Spalte.
+        """
+        cursor = self.connection.cursor()
+
+        # Tabelle erstellen
+        dealer_columns = ", ".join([f"'Dealer_{i}' TEXT" for i in range(1, 11)])
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS Double_overview (
+                hand_text VARCHAR PRIMARY KEY,
+                {dealer_columns}
+            )
+        """)
+
+        # Alle Starthände und Dealer-Karten abrufen
+        cursor.execute("SELECT DISTINCT hand_text FROM Full_player_hands WHERE is_starthand = 1")
+        hands = [row[0] for row in cursor.fetchall()]
+
+        for hand_text in hands:
+            values = []
+            for dealer_card in range(1, 11):
+                # Dealer-Karte als String für die Abfrage
+                dealer_card_str = str(dealer_card)
+
+                # Erwartungswert und Wahrscheinlichkeiten abrufen
+                cursor.execute("""
+                    SELECT action, ev, win_hit, loss_hit 
+                    FROM Full_player_hands 
+                    WHERE hand_text = ? AND dealer_start = ?
+                """, (hand_text, dealer_card_str))
+                result = cursor.fetchone()
+
+                if result:
+                    action, ev, win_hit, loss_hit = result
+
+                    # Überprüfen auf None und Standardaktion verwenden, wenn nötig
+                    if ev is None or win_hit is None or loss_hit is None:
+                        values.append(f"'{action}'")
+                    else:
+                        # Double-Bedingung prüfen
+                        if (win_hit - loss_hit) * 2 > ev:
+                            values.append("'DOUBLE'")
+                        else:
+                            values.append(f"'{action}'")
+                else:
+                    values.append("NULL")
+
+            # Einfügen oder Aktualisieren
+            cursor.execute(f"""
+                INSERT INTO Double_overview (hand_text, {', '.join([f"'Dealer_{i}'" for i in range(1, 11)])})
+                VALUES (?, {', '.join(values)})
+                ON CONFLICT(hand_text) DO UPDATE SET
+                {', '.join([f"'Dealer_{i}'=excluded.'Dealer_{i}'" for i in range(1, 11)])}
+            """, (hand_text,))
+
+        self.connection.commit()
+        print("Tabelle 'Double_overview' erfolgreich erstellt und gefüllt.")

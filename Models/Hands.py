@@ -190,7 +190,7 @@ class Hands:
             action = 'Stand'
         elif total_value <=6:
             win_stand = 0.0
-            loss_stand = 0.0
+            loss_stand = 1.0
             draw_stand = 0.0
             win_hit = win_stand
             loss_hit = loss_stand
