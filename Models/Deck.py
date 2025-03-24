@@ -1,6 +1,5 @@
 deck_count = 1  #Globale Variable für die Anzahl der Decks, Standard für Testzwecke ist 1 für ein Deck aus 52 Karten, Standard für Kasinos ist 6 Decks aus zusammen 312 Karten.
 
-
 class Deck:
     def __init__(self):
         """Erstellt ein Deck mit Kartenwerten von 1 bis 10 und ihren Häufigkeiten."""

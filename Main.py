@@ -104,8 +104,11 @@ if __name__ == "__main__":
     #Dealer_Hands_in_DB()
     #Dealer_Hands_in_DB(missing_cards=[1, 1, 1])
     #Dealer_Hands_statistics_from_DB()
-    Full_Hands()
-    EVs()
+    #Full_Hands()
+    #EVs()
     Strategy_Overview()
+
+
+
 
 

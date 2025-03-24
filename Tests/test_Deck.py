@@ -96,6 +96,15 @@ class DeckTest(unittest.TestCase):
         for card, expected in expected_probabilities_2.items():
             self.assertAlmostEqual(probabilities[card], expected, places=4)
 
+        expected_probabilities_3 = {
+            1: 0.0000, 2: 0.0000, 3: 0.0714, 4: 0.0952,
+            5: 0.0952, 6: 0.0952, 7: 0.0952, 8: 0.0952,
+            9: 0.0714, 10: 0.3810
+        }
+        probabilities = calc.card_draw_probabilities([1, 1, 1, 1, 2, 2, 2, 2, 3], 9)
+        for card, expected in expected_probabilities_3.items():
+            self.assertAlmostEqual(probabilities[card], expected, places=4)
+
         # 2. Ungültige dealer_start: 'Blackjack'
         with self.assertRaises(ValueError):
             calc.card_draw_probabilities([], "Blackjack")
