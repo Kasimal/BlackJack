@@ -476,6 +476,9 @@ class DatabaseManager:
                 # Deck-Status zurücksetzen
                 deck = Deck()
 
+                # Dealer-Karte entfernen
+                deck.remove_card(int(dealer_start))
+
                 # Karten aus dem Deck entfernen basierend auf der aktuellen Hand
                 for card_value, count in enumerate(card_counts, start=1):
                     for _ in range(count):
@@ -521,14 +524,14 @@ class DatabaseManager:
                 #     expected_value += probabilities[card] * next_ev
 
                 for card in range(1, 11):
-
-                    if card in [1, 2]:  # Diese Karten können nicht mehr gezogen werden
-                        continue
+                    if deck.card_frequencies[card] == 0:
+                        continue  # Karte nicht mehr verfügbar
 
                     new_min = min_value + card
                     if new_min > 21:
                         expected_value += probabilities[card] * (-1)  # Bust
                         continue
+
 
                     new_counts = list(card_counts)
                     new_counts[card - 1] += 1
@@ -536,17 +539,17 @@ class DatabaseManager:
                     # cache_key = tuple(new_counts + [new_min, dealer_start])
 
                     # Hier beginnen die Debugging-Ausgaben
-                    print("Debug-Ausgabe")
+
                     sys.stdout.flush()
-                    print(f"Original new_counts: {new_counts}")
-                    print(f"Processed new_counts: {tuple(int(count) for count in new_counts[:10])}")
-                    print(f"new_min: {new_min}")
-                    print(f"dealer_start: {dealer_start}")
-                    print(f"Final cache_key: {cache_key}")
-                    print(f"Is key in cache: {cache_key in hand_cache}")
-                    if cache_key in hand_cache:
-                        print(f"EV from cache: {hand_cache[cache_key]}")
-                    else:
+
+                    if cache_key not in hand_cache:
+                        print("Debug-Ausgabe")
+                        print(f"Original new_counts: {new_counts}")
+                        print(f"Processed new_counts: {tuple(int(count) for count in new_counts[:10])}")
+                        print(f"new_min: {new_min}")
+                        print(f"dealer_start: {dealer_start}")
+                        print(f"Final cache_key: {cache_key}")
+                        print(f"Is key in cache: {cache_key in hand_cache}")
                         print("Key not found in cache!")
 
                     if cache_key in hand_cache:
@@ -557,9 +560,9 @@ class DatabaseManager:
 
                     expected_value += probabilities[card] * next_ev
 
-                    print(f"Nach Ziehen von Karte {card}: EV = {expected_value:.4f}")
+                    #print(f"Nach Ziehen von Karte {card}: EV = {expected_value:.4f}")
 
-                print(f"Finale EV für diese Hand: {expected_value:.4f}")
+                #print(f"Finale EV für diese Hand: {expected_value:.4f}")
 
                 # Update der Datenbank
                 cursor.execute(f"""
