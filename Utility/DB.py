@@ -491,39 +491,13 @@ class DatabaseManager:
                 # Wahrscheinlichkeiten korrekt berechnen
                 total_cards = deck.total_cards()
                 probabilities = {}
-                for card in range(1, 11):
+                for card in deck.get_available_cards():
                     available = deck.card_frequencies[card]
                     probabilities[card] = available / total_cards if total_cards > 0 else 0
 
                 expected_value = 0.0
 
-                # for card in range(1, 11):
-                #     if deck.card_frequencies[card] == 0:
-                #         continue  # Karte nicht verfügbar
-                #
-                #     # Neue Kartenverteilung simulieren
-                #     new_counts = list(card_counts)
-                #     new_counts[card - 1] += 1
-                #
-                #     # Prüfe Kartenlimit
-                #     if new_counts[card - 1] > 4 * deck.deck_count:
-                #         new_min = min_value + card
-                #         if new_min > 21:
-                #             expected_value += probabilities[card] * (-1)
-                #         continue
-                #
-                #     # Restliche Logik...
-                #     new_min = min_value + card
-                #     if new_min > 21:
-                #         expected_value += probabilities[card] * (-1)
-                #         continue
-                #
-                #     # Cache-Key erstellen
-                #     cache_key = tuple(int(count) for count in new_counts[:10]) + (int(new_min),) + ((dealer_start,) if isinstance(dealer_start, str) else dealer_start)
-                #     next_ev = hand_cache.get(cache_key, 0)
-                #     expected_value += probabilities[card] * next_ev
-
-                for card in range(1, 11):
+                for card in deck.get_available_cards():
                     if deck.card_frequencies[card] == 0:
                         continue  # Karte nicht mehr verfügbar
 
@@ -532,17 +506,14 @@ class DatabaseManager:
                         expected_value += probabilities[card] * (-1)  # Bust
                         continue
 
-
                     new_counts = list(card_counts)
                     new_counts[card - 1] += 1
                     cache_key = tuple(int(count) for count in new_counts[:10]) + (int(new_min),) + ((dealer_start,) if isinstance(dealer_start, str) else dealer_start)
                     # cache_key = tuple(new_counts + [new_min, dealer_start])
 
-                    # Hier beginnen die Debugging-Ausgaben
-
-                    sys.stdout.flush()
-
                     if cache_key not in hand_cache:
+                        # Hier beginnen die Debugging-Ausgaben
+                        sys.stdout.flush()
                         print("Debug-Ausgabe")
                         print(f"Original new_counts: {new_counts}")
                         print(f"Processed new_counts: {tuple(int(count) for count in new_counts[:10])}")
@@ -551,12 +522,10 @@ class DatabaseManager:
                         print(f"Final cache_key: {cache_key}")
                         print(f"Is key in cache: {cache_key in hand_cache}")
                         print("Key not found in cache!")
-
-                    if cache_key in hand_cache:
-                        next_ev = hand_cache[cache_key]
-                    else:
                         print(f"Warnung: Folgehand nicht im Cache: {cache_key}")
                         next_ev = -1  # Pessimistische Annahme, wenn die Hand fehlt
+                    else:
+                        next_ev = hand_cache[cache_key]
 
                     expected_value += probabilities[card] * next_ev
 
@@ -579,100 +548,6 @@ class DatabaseManager:
         finally:
             if self.connection:
                 self.connection.close()
-
-    # def get_ev_for_hands(self, table_name):
-    #     try:
-    #         cursor = self.connection.cursor()
-    #
-    #         # Spalte 'ev' hinzufügen, falls nicht vorhanden
-    #         cursor.execute(f"PRAGMA table_info({table_name})")
-    #         if "ev" not in {row[1] for row in cursor.fetchall()}:
-    #             cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN ev FLOAT")
-    #
-    #         # Einfache Fälle direkt berechnen
-    #         cursor.execute(f"""
-    #             UPDATE {table_name}
-    #             SET ev = win_stand - loss_stand
-    #             WHERE action = 'Stand'
-    #         """)
-    #
-    #         cursor.execute(f"""
-    #             UPDATE {table_name}
-    #             SET ev =
-    #                 CASE
-    #                     WHEN dealer_start = 'Blackjack' AND is_blackjack = 1 THEN 0
-    #                     WHEN is_blackjack = 1 THEN 1.5
-    #                     WHEN dealer_start = 'Blackjack' THEN -1
-    #                 END
-    #             WHERE dealer_start = 'Blackjack' OR is_blackjack = 1
-    #         """)
-    #
-    #         # Cache aller Hände aufbauen
-    #         cursor.execute(f"""
-    #             SELECT c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,
-    #                    minimum_value, dealer_start, ev
-    #             FROM {table_name}
-    #         """)
-    #         hand_cache = {
-    #             (c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, min_val, dealer): ev
-    #             for c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, min_val, dealer, ev in cursor.fetchall()
-    #         }
-    #
-    #         # Hände mit 'Hit' verarbeiten (sortiert nach Kartenanzahl)
-    #         cursor.execute(f"""
-    #             SELECT hand_id, minimum_value, dealer_start,
-    #                    c1,c2,c3,c4,c5,c6,c7,c8,c9,c10
-    #             FROM {table_name}
-    #             WHERE action = 'HIT'
-    #             ORDER BY (c1+c2+c3+c4+c5+c6+c7+c8+c9+c10) DESC
-    #         """)
-    #
-    #         for hand in cursor.fetchall():
-    #             hand_id, min_value, dealer_start, *card_counts = hand
-    #             hand_cards = []
-    #             for value, count in enumerate(card_counts, start=1):
-    #                 hand_cards.extend([value] * count)
-    #
-    #             probabilities = calc.card_draw_probabilities(hand_cards, dealer_start)
-    #             expected_value = 0.0
-    #
-    #             for card in range(1, 11):
-    #                 card_prob = probabilities[card]
-    #                 new_min = min_value + card  # Neuer minimaler Wert
-    #
-    #                 if new_min > 21:  # Bust-Fall direkt behandeln
-    #                     expected_value += card_prob * (-1)
-    #                     continue
-    #
-    #                 # Neue Kartenverteilung erstellen
-    #                 new_counts = list(card_counts)
-    #                 new_counts[card - 1] += 1
-    #                 cache_key = tuple(int(count) for count in new_counts[:10]) + (int(new_min),) + (
-    #                     (dealer_start,) if isinstance(dealer_start, str) else dealer_start)
-    #
-    #                 if cache_key in hand_cache:
-    #                     next_ev = hand_cache[cache_key]
-    #                 else:
-    #                     print(f"Warnung: Hand {cache_key} nicht gefunden (min={new_min})")
-    #                     next_ev = -1 if new_min > 21 else 0  # Fallback für fehlende Daten
-    #
-    #                 expected_value += card_prob * next_ev
-    #
-    #             # EV in die Datenbank schreiben
-    #             cursor.execute(f"""
-    #                 UPDATE {table_name}
-    #                 SET ev = ?
-    #                 WHERE hand_id = ?
-    #             """, (expected_value, hand_id))
-    #
-    #         self.connection.commit()
-    #
-    #     except sqlite3.Error as e:
-    #         print(f"Datenbankfehler: {e}")
-    #         self.connection.rollback()
-    #     finally:
-    #         if self.connection:
-    #             self.connection.close()
 
     def create_and_fill_player_dealer_strategy_table(self):
         self.drop_table("Player_dealer_strategy_table")
