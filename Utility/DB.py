@@ -684,3 +684,148 @@ class DatabaseManager:
 
         self.connection.commit()
         print("Tabelle 'Double_overview' erfolgreich erstellt und gefüllt.")
+
+    def create_and_fill_starthand_overview(self):
+        """
+        Erstellt die Tabelle 'starthand_overview' mit allen Starthänden.
+        Für jede Kombination aus Starthand und Dealer-Startkarte wird die beste Aktion ('Hit', 'Stand', 'Double', 'Split') gespeichert.
+        """
+        cursor = self.connection.cursor()
+
+        # Tabelle erstellen
+        dealer_columns = ", ".join([f"'Dealer_{i}' TEXT" for i in range(1, 11)])
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS starthand_overview (
+                hand_text VARCHAR PRIMARY KEY,
+                {dealer_columns}
+            )
+        """)
+
+        # Alle Starthände abrufen
+        cursor.execute("SELECT DISTINCT hand_text FROM Full_player_hands WHERE is_starthand = 1")
+        hands = [row[0] for row in cursor.fetchall()]
+
+        for hand_text in hands:
+            values = []
+            cards = hand_text.split(",")
+            is_pair = len(cards) == 2 and cards[0] == cards[1]
+            base_card = int(cards[0]) if is_pair else None
+
+            for dealer_card in range(1, 11):
+                dealer_str = str(dealer_card)
+
+                # Werte für aktuelle Hand abrufen
+                cursor.execute("""
+                    SELECT action, ev, win_hit, loss_hit
+                    FROM Full_player_hands
+                    WHERE hand_text = ? AND dealer_start = ?
+                """, (hand_text, dealer_str))
+                row = cursor.fetchone()
+
+                if not row or any(v is None for v in row):
+                    values.append("NULL")
+                    continue
+
+                action, ev, win_hit, loss_hit = row
+                best_action = action
+
+                # Split prüfen
+                if is_pair:
+                    cursor.execute("""
+                        SELECT ev FROM Full_player_hands
+                        WHERE hand_text = ? AND dealer_start = ?
+                    """, (str(base_card), dealer_str))
+                    ev_split_row = cursor.fetchone()
+                    if ev_split_row and ev_split_row[0] is not None:
+                        ev_split_total = ev_split_row[0] * 2
+                        if ev_split_total > max(ev, (win_hit - loss_hit) * 2):
+                            best_action = "Split"
+
+                # Double prüfen (nur wenn kein Split empfohlen wurde)
+                if best_action not in ("Split",):
+                    if (win_hit - loss_hit) * 2 > max(ev, 0):
+                        best_action = "Double"
+
+                values.append(f"'{best_action}'")
+
+            # Einfügen oder Aktualisieren
+            cursor.execute(f"""
+                INSERT INTO starthand_overview (hand_text, {', '.join([f"'Dealer_{i}'" for i in range(1, 11)])})
+                VALUES (?, {', '.join(values)})
+                ON CONFLICT(hand_text) DO UPDATE SET
+                {', '.join([f"'Dealer_{i}'=excluded.'Dealer_{i}'" for i in range(1, 11)])}
+            """, (hand_text,))
+
+        self.connection.commit()
+        print("Tabelle 'starthand_overview' erfolgreich erstellt und gefüllt.")
+
+    def create_and_fill_pair_overview(self):
+        """
+        Erstellt und füllt die Tabelle 'Pair_overview' mit 10 Zeilen (1,1 bis 10,10) und 10 Spalten (Dealer_1 bis Dealer_10).
+        Eine Aktion ist 'Split', wenn ev_single_card * 2 > max(ev, (win_hit - loss_hit) * 2).
+        Ansonsten wird wie bei Double entschieden.
+        """
+        cursor = self.connection.cursor()
+
+        # Tabelle erstellen
+        dealer_columns = ", ".join([f"Dealer_{i} TEXT" for i in range(1, 11)])
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS Pair_overview (
+                pair_value INTEGER PRIMARY KEY,
+                {dealer_columns}
+            )
+        """)
+
+        # Nur Paare 1,1 bis 10,10
+        for pair_value in range(1, 11):
+            hand_text = f"{pair_value},{pair_value}"
+            row_values = []
+
+            for dealer_card in range(1, 11):
+                dealer_str = str(dealer_card)
+
+                # Hole Daten der Paare (2 gleiche Karten)
+                cursor.execute("""
+                    SELECT ev, win_hit, loss_hit, action 
+                    FROM Full_player_hands 
+                    WHERE hand_text = ? AND dealer_start = ?
+                """, (hand_text, dealer_str))
+                result = cursor.fetchone()
+
+                # Hole den EV der Einzelkarte für Vergleich
+                cursor.execute("""
+                    SELECT ev 
+                    FROM Full_player_hands 
+                    WHERE hand_text = ? AND dealer_start = ?
+                """, (str(pair_value), dealer_str))
+                ev_single_result = cursor.fetchone()
+
+                if result and ev_single_result:
+                    ev, win_hit, loss_hit, action = result
+                    ev_single = ev_single_result[0]
+
+                    if None in (ev, win_hit, loss_hit, ev_single):
+                        row_values.append(f"'{action}'")
+                    elif ev_single * 2 > max(ev, (win_hit - loss_hit) * 2):
+                        row_values.append("'Split'")
+                    elif (win_hit - loss_hit) * 2 > max(ev, 0):
+                        row_values.append("'Double'")
+                    else:
+                        row_values.append(f"'{action}'")
+                else:
+                    row_values.append("NULL")
+
+            # Daten einfügen oder aktualisieren
+            cursor.execute(f"""
+                INSERT INTO Pair_overview (pair_value, {', '.join([f"Dealer_{i}" for i in range(1, 11)])})
+                VALUES (?, {', '.join(row_values)})
+                ON CONFLICT(pair_value) DO UPDATE SET
+                {', '.join([f"Dealer_{i} = excluded.Dealer_{i}" for i in range(1, 11)])}
+            """, (pair_value,))
+
+        self.connection.commit()
+        print("Tabelle 'Pair_overview' erfolgreich erstellt und gefüllt.")
+
+
+
+
