@@ -199,8 +199,8 @@ class Hands:
             action = 'Hit'
         else:
             dealer_hand_distribution = dealer_hands.just_generate_dealer_hands(dealer_cards[0], deck) if dealer_cards else {}
-            win_stand, loss_stand, draw_stand = calc.calculate_stand_probabilities(total_value, is_blackjack, dealer_hand_distribution)
-            win_hit, loss_hit, draw_hit = calc.calculate_hit_probabilities(dealer_hand_distribution, hit_probabilities)
+            win_stand, loss_stand, draw_stand = calc.stand_probabilities(total_value, is_blackjack, dealer_hand_distribution)
+            win_hit, loss_hit, draw_hit = calc.hit_probabilities(dealer_hand_distribution, hit_probabilities)
             hit_stand = (win_hit - loss_hit) - (win_stand - loss_stand)
             action = 'Stand' if hit_stand < 0 else 'Hit'
 

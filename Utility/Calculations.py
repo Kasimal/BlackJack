@@ -303,7 +303,7 @@ def hand_probability(hand, deck=None, start_cards=None):
 # Black- | Loss  | Loss  | Loss  | Loss  | Loss  | Loss  | Draw      | Loss
 # jack   |       |       |       |       |       |       |           |
 
-def calculate_hit_probabilities(dealer_hand_distribution, probabilities):
+def hit_probabilities(dealer_hand_distribution, probabilities):
     """
     Berechnet die Gewinn-, Verlust- und Unentschieden-Wahrscheinlichkeiten für die Hit-Aktion.
 
@@ -345,7 +345,7 @@ def calculate_hit_probabilities(dealer_hand_distribution, probabilities):
 
     return win_prob, loss_prob, draw_prob
 
-def calculate_stand_probabilities(total_value, is_blackjack, dealer_hand_distribution):
+def stand_probabilities(total_value, is_blackjack, dealer_hand_distribution):
     """
     Berechnet die Gewinn-, Verlust- und Unentschieden-Wahrscheinlichkeiten für die Stand-Aktion.
 
