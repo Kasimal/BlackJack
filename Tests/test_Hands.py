@@ -2,7 +2,7 @@ import unittest
 from collections import Counter
 from Utility.DB import DatabaseManager
 
-class TestBlackjackHands(unittest.TestCase):
+class TestHands(unittest.TestCase):
     def setUp(self):
         db_path = "../Data/blackjack.db"  # Der relative Pfad von Tests zu Data
         self.db_manager = DatabaseManager(db_path)

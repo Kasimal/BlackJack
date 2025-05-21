@@ -1,7 +1,7 @@
 import unittest
 import Utility.Calculations as calc
 
-class DeckTest(unittest.TestCase):
+class TestCalculations(unittest.TestCase):
     def test_frequencies(self):
         cards_1_2 = [1, 2]  # Ass und 2
         cards_1_1 = [1, 1]  # Ass Ass
